@@ -86,6 +86,9 @@ var STATE_NEXT = {
   incidents:      { REPORTED:['INVESTIGATING','CANCELLED'], INVESTIGATING:['CLOSED'], CLOSED:[] },
   investigations: { ONGOING:['DONE'], DONE:[] },
   capas:          { OPEN:['DOING'], DOING:['DONE'], DONE:['VERIFIED'], VERIFIED:[] },
+  emergency_plans:    { DRAFT:['PUBLISHED'], PUBLISHED:[] },
+  emergency_drills:   { PLANNED:['COMPLETED'], COMPLETED:[] },
+  emergency_responses:{ ACTIVATED:['DISPOSING'], UPGRADED:['DISPOSING'], DISPOSING:['RECOVERING'], RECOVERING:['CLOSED'], CLOSED:[] },
 };
 
 /* ---------- 演示账号（本地登录，无需真实 JWT） ---------- */
@@ -831,19 +834,19 @@ var SEED = {
     {area:'焊接车间',patrol_date:'2026-08-16',inspector:'李强',result:'异常',issue_desc:'气瓶存放区堆放杂物'}
   ],
   emergency_plans: [
-    {name:'火灾事故应急预案',plan_type:'综合',version:'V3.0',issue_date:'2026-05-01',review_date:'2026-08-01'},
-    {name:'危化品泄漏专项预案',plan_type:'专项',version:'V2.0',issue_date:'2026-03-15',review_date:'2026-08-15'}
+    {name:'火灾事故应急预案',plan_type:'综合',version:'V3.0',issue_date:'2026-05-01',review_date:'2026-08-01',status:'PUBLISHED'},
+    {name:'危化品泄漏专项预案',plan_type:'专项',version:'V2.0',issue_date:'2026-03-15',review_date:'2026-08-15',status:'DRAFT'}
   ],
   emergency_drills: [
-    {drill_type:'消防疏散演练',drill_date:'2026-08-10',organizer:'张伟',result:'合格',issue:''},
-    {drill_type:'危化品泄漏演练',drill_date:'2026-07-15',organizer:'陈刚',result:'需改进',issue:'响应速度待提升'}
+    {drill_type:'消防疏散演练',drill_date:'2026-08-10',organizer:'张伟',result:'合格',issue:'',status:'PLANNED'},
+    {drill_type:'危化品泄漏演练',drill_date:'2026-07-15',organizer:'陈刚',result:'需改进',issue:'响应速度待提升',status:'COMPLETED'}
   ],
   emergency_supplies: [
     {name:'正压式空气呼吸器',supply_type:'呼吸防护',quantity:4,unit:'套',location:'应急物资库',expire_date:'2027-06-30'},
     {name:'急救箱',supply_type:'医疗急救',quantity:6,unit:'个',location:'各车间',expire_date:null}
   ],
   emergency_responses: [
-    {incident:'焊接飞溅引燃油污',start_time:'2026-08-14 10:05',level:'一般',commander:'李强',summary:'现场扑灭，未造成伤亡',status:'已结束'}
+    {incident:'焊接飞溅引燃油污',start_time:'2026-08-14 10:05',level:'GENERAL',commander:'李强',summary:'现场扑灭，未造成伤亡',status:'CLOSED'}
   ],
   near_misses: [
     {title:'叉车差点撞到行人',category:'车辆伤害',location:'物流通道',occurred_at:'2026-08-15 16:20:00',reporter:'赵敏',description:'叉车倒车未鸣笛，行人及时避让'},
