@@ -226,7 +226,7 @@ async function auditLog(actor, action, target, detail){
 
 /* ---------- 手动定时任务 ---------- */
 async function runJobs(){
-  var summary = { check_tasks_generated:0, hazard_overdue:0, cert_reminders:0 };
+  var summary = { check_tasks_generated:0, hazard_overdue:0, cert_reminders:0, facility_expired:0, emission_alerts:0 };
   var today = localDate();
   var plans = await listAll('check_plan');
   for(var i=0;i<plans.length;i++){
@@ -255,6 +255,25 @@ async function runJobs(){
     if(daysMap.indexOf(diff) >= 0){
       await notifySend({ title:'证书到期提醒', content:'证书将于 '+diff+' 天后到期，请及时复审', to_user:c.holder });
       summary.cert_reminders++;
+    }
+  }
+  var facilities = await listAll('safety_facilities');
+  for(var m=0;m<facilities.length;m++){
+    var f = facilities[m];
+    if(f.check_date){
+      var fdays = Math.ceil((new Date() - new Date(f.check_date))/86400000);
+      if(fdays > 365 && f.status !== 'EXPIRED'){
+        f.status = 'EXPIRED'; await putRow('safety_facilities', f); summary.facility_expired++;
+        await notifySend({ title:'安全设施检测到期', content:'设施 '+f.name+' 上次检测 '+f.check_date+'，已超期（超 '+fdays+' 天）', to_user:'' });
+      }
+    }
+  }
+  var emissions = await listAll('emission_monitors');
+  for(var n=0;n<emissions.length;n++){
+    var em = emissions[n];
+    if(em.result === '超标' && em.status !== 'ALERTED'){
+      em.status = 'ALERTED'; await putRow('emission_monitors', em); summary.emission_alerts++;
+      await notifySend({ title:'排污超标告警', content:'污染物 '+em.pollutant+' 超标（实测 '+em.actual_value+'，标准 '+em.standard_value+'）', to_user:'' });
     }
   }
   return summary;
@@ -926,8 +945,8 @@ var SEED = {
     {equipment:'空压机',fault_desc:'压力表异常',applicant:'周明',plan_date:'2026-08-20',result:'',status:'ASSIGNED'}
   ],
   safety_facilities: [
-    {name:'洗眼器',facility_type:'应急洗眼',location:'化学品库',check_date:'2026-08-10'},
-    {name:'可燃气体报警器',facility_type:'气体报警',location:'焊接车间',check_date:'2026-08-12'}
+    {name:'洗眼器',facility_type:'应急洗眼',location:'化学品库',check_date:'2026-08-10',status:'NORMAL'},
+    {name:'可燃气体报警器',facility_type:'气体报警',location:'焊接车间',check_date:'2025-06-01',status:'NORMAL'}
   ],
   equipment_lifecycle: [
     {equipment:'老式冲压机',event_type:'报废',event_date:'2026-07-01',reason:'超期服役',operator:'张伟'},
@@ -1005,7 +1024,7 @@ var SEED = {
   ],
   emission_monitors: [
     {pollutant:'COD',monitor_point:'总排口',standard_value:'100mg/L',actual_value:'85mg/L',monitor_date:'2026-08-15',result:'达标'},
-    {pollutant:'颗粒物',monitor_point:'焊接车间排口',standard_value:'20mg/m³',actual_value:'18mg/m³',monitor_date:'2026-08-15',result:'达标'}
+    {pollutant:'颗粒物',monitor_point:'焊接车间排口',standard_value:'20mg/m³',actual_value:'28mg/m³',monitor_date:'2026-08-16',result:'超标'}
   ],
   env_checks: [
     {check_type:'季度环保检查',check_date:'2026-08-01',checker:'张伟',result:'合格',issue:''},
