@@ -447,6 +447,41 @@ async function route(method, path, body){
     return { closed:true, ticket:tk };
   }
 
+  /* ---- R4 应急响应一键启动 ---- */
+  if(path === '/api/emergency/activate' && method === 'POST'){
+    var erScenario = body.incident || body.scenario || '';
+    var code = await codeGen('ER');
+    await putRow('emergency_responses', {
+      code:code, incident:erScenario, level:body.level||'GENERAL',
+      summary:body.summary||'', commander:body.commander||'',
+      start_time:new Date().toISOString(), status:'ACTIVATED', created_at:new Date().toISOString()
+    });
+    await auditLog(__currentUser.name, 'ACTIVATE', 'emergency_responses', code);
+    await notifySend({ title:'应急响应已启动', content:'应急响应 '+code+'：'+erScenario, to_user:'ALL' });
+    return { code:code, status:'ACTIVATED' };
+  }
+
+  /* ---- DH DataHub 数据导入 ---- */
+  if(path === '/api/datahub/import' && method === 'POST'){
+    var dht = body.table;
+    var dhRows = body.rows || [];
+    var dhschema = SCHEMA[dht];
+    if(!dhschema) throw httpErr('UNKNOWN_TABLE');
+    var dhOk = 0, dhFail = 0, dhErrs = [];
+    for(var dhi=0; dhi<dhRows.length; dhi++){
+      var dhRow = dhRows[dhi];
+      var dhMiss = null;
+      (dhschema.req||[]).forEach(function(rk){ if(!dhRow[rk] && !dhMiss) dhMiss = rk; });
+      if(dhMiss){ dhFail++; dhErrs.push({ row:dhi+2, reason:'缺少必填字段 '+dhMiss }); continue; }
+      if(dhschema.prefix && !dhRow.code){ dhRow.code = await codeGen(dhschema.prefix); }
+      if(!dhRow.created_at){ dhRow.created_at = new Date().toISOString(); }
+      await putRow(dht, dhRow);
+      dhOk++;
+    }
+    await auditLog(__currentUser.name, 'IMPORT', dht, dhOk+'/'+(dhOk+dhFail));
+    return { ok:dhOk, fail:dhFail, errors:dhErrs };
+  }
+
   /* ---- 通用表 CRUD ---- */
   if(path.indexOf('/api/table/') === 0){
     var seg = path.replace('/api/table/','').split('/').filter(Boolean);
