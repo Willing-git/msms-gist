@@ -226,7 +226,7 @@ async function auditLog(actor, action, target, detail){
 
 /* ---------- 手动定时任务 ---------- */
 async function runJobs(){
-  var summary = { check_tasks_generated:0, hazard_overdue:0, cert_reminders:0, facility_expired:0, emission_alerts:0 };
+  var summary = { check_tasks_generated:0, hazard_overdue:0, cert_reminders:0, facility_expiring:0, facility_expired:0, emission_alerts:0 };
   var today = localDate();
   var plans = await listAll('check_plan');
   for(var i=0;i<plans.length;i++){
@@ -265,6 +265,12 @@ async function runJobs(){
       if(fdays > 365 && f.status !== 'EXPIRED'){
         f.status = 'EXPIRED'; await putRow('safety_facilities', f); summary.facility_expired++;
         await notifySend({ title:'安全设施检测到期', content:'设施 '+f.name+' 上次检测 '+f.check_date+'，已超期（超 '+fdays+' 天）', to_user:'' });
+      } else if(f.status !== 'EXPIRED'){
+        var fdue = Math.ceil((new Date(new Date(f.check_date).getTime() + 365*86400000) - new Date())/86400000);
+        if([30,15,7,1].indexOf(fdue) >= 0){
+          await notifySend({ title:'安全设施检测临期提醒', content:'设施 '+f.name+' 检测将于 '+fdue+' 天后到期，请安排检测', to_user:'' });
+          summary.facility_expiring++;
+        }
       }
     }
   }
