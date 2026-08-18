@@ -89,6 +89,15 @@ var STATE_NEXT = {
   emergency_plans:    { DRAFT:['PUBLISHED'], PUBLISHED:[] },
   emergency_drills:   { PLANNED:['COMPLETED'], COMPLETED:[] },
   emergency_responses:{ ACTIVATED:['DISPOSING'], UPGRADED:['DISPOSING'], DISPOSING:['RECOVERING'], RECOVERING:['CLOSED'], CLOSED:[] },
+  moc_changes:        { DRAFT:['ASSESSING'], ASSESSING:['APPROVED'], APPROVED:['IMPLEMENTING'], IMPLEMENTING:['CLOSED'], CLOSED:[] },
+  danger_works:       { APPLIED:['APPROVED'], APPROVED:['EXECUTING'], EXECUTING:['CLOSED'], CLOSED:[] },
+  loto_records:       { LOCKED:['VERIFIED'], VERIFIED:['UNLOCKED'], UNLOCKED:[] },
+  work_injuries:      { REPORTED:['CONFIRMED'], CONFIRMED:['TREATING'], TREATING:['CLAIMED'], CLAIMED:['CLOSED'], CLOSED:[] },
+  maintenances:       { REPORTED:['ASSIGNED'], ASSIGNED:['REPAIRING'], REPAIRING:['ACCEPTED'], ACCEPTED:[] },
+  major_hazards:      { IDENTIFIED:['ASSESSED'], ASSESSED:['FILED'], FILED:['MONITORING'], MONITORING:[] },
+  alarms:             { OPEN:['HANDLED'], HANDLED:['CLOSED'], CLOSED:[] },
+  near_misses:        { REPORTED:['ANALYZED'], ANALYZED:['CLOSED'], CLOSED:[] },
+  fire_drills:        { PLANNED:['COMPLETED'], COMPLETED:[] },
 };
 
 /* ---------- 演示账号（本地登录，无需真实 JWT） ---------- */
@@ -913,8 +922,8 @@ var SEED = {
     {name:'华信机电维保公司',license_no:'D332054321',contract_end:'2026-12-31',insurance_end:'2026-12-31',violations:0,accidents:0,evaluation_score:5,is_blacklist:0,status:'ACTIVE'}
   ],
   maintenances: [
-    {equipment:'卷板机',fault_desc:'防护罩松动',applicant:'李强',plan_date:'2026-08-18',result:''},
-    {equipment:'空压机',fault_desc:'压力表异常',applicant:'周明',plan_date:'2026-08-20',result:''}
+    {equipment:'卷板机',fault_desc:'防护罩松动',applicant:'李强',plan_date:'2026-08-18',result:'',status:'REPORTED'},
+    {equipment:'空压机',fault_desc:'压力表异常',applicant:'周明',plan_date:'2026-08-20',result:'',status:'ASSIGNED'}
   ],
   safety_facilities: [
     {name:'洗眼器',facility_type:'应急洗眼',location:'化学品库',check_date:'2026-08-10'},
@@ -952,43 +961,43 @@ var SEED = {
     {incident:'焊接飞溅引燃油污',start_time:'2026-08-14 10:05',level:'GENERAL',commander:'李强',summary:'现场扑灭，未造成伤亡',status:'CLOSED'}
   ],
   near_misses: [
-    {title:'叉车差点撞到行人',category:'车辆伤害',location:'物流通道',occurred_at:'2026-08-15 16:20:00',reporter:'赵敏',description:'叉车倒车未鸣笛，行人及时避让'},
-    {title:'工具从高处坠落',category:'高处坠落',location:'装配车间',occurred_at:'2026-08-13 09:40:00',reporter:'王海',description:'扳手从平台坠落，下方无人'}
+    {title:'叉车差点撞到行人',category:'车辆伤害',location:'物流通道',occurred_at:'2026-08-15 16:20:00',reporter:'赵敏',description:'叉车倒车未鸣笛，行人及时避让',status:'REPORTED'},
+    {title:'工具从高处坠落',category:'高处坠落',location:'装配车间',occurred_at:'2026-08-13 09:40:00',reporter:'王海',description:'扳手从平台坠落，下方无人',status:'ANALYZED'}
   ],
   violations: [
     {person:'李某',violation_type:'违章操作',date:'2026-08-12',location:'焊接车间',description:'未持证操作焊机',handler:'张伟'},
     {person:'张某',violation_type:'违反劳动纪律',date:'2026-08-13',location:'冲压车间',description:'作业时未戴护目镜',handler:'王海'}
   ],
   alarms: [
-    {source:'可燃气体报警器',level:'重要',content:'焊接车间可燃气体浓度超限',occurred_at:'2026-08-16 14:30:00',handler:'李强',status:'待处理'}
+    {source:'可燃气体报警器',level:'重要',content:'焊接车间可燃气体浓度超限',occurred_at:'2026-08-16 14:30:00',handler:'李强',status:'OPEN'}
   ],
   moc_changes: [
-    {title:'冲压工艺参数调整',change_type:'工艺',dept:'冲压车间',approver:'张伟',description:'调整冲压速度参数',risk_assess:'低风险'},
-    {title:'更换焊接设备',change_type:'设备',dept:'焊接车间',approver:'李强',description:'更换旧焊机',risk_assess:'中风险'}
+    {title:'冲压工艺参数调整',change_type:'工艺',dept:'冲压车间',approver:'张伟',description:'调整冲压速度参数',risk_assess:'低风险',status:'DRAFT'},
+    {title:'更换焊接设备',change_type:'设备',dept:'焊接车间',approver:'李强',description:'更换旧焊机',risk_assess:'中风险',status:'ASSESSING'}
   ],
   danger_works: [
-    {work_type:'临时吊装',location:'装配车间',applicant:'赵敏',plan_date:'2026-08-20',supervisor:'王海',risk_desc:'吊装区域警戒'},
-    {work_type:'受限空间清理',location:'储罐区',applicant:'王海',plan_date:'2026-08-22',supervisor:'张伟',risk_desc:'气体检测+通风'}
+    {work_type:'临时吊装',location:'装配车间',applicant:'赵敏',plan_date:'2026-08-20',supervisor:'王海',risk_desc:'吊装区域警戒',status:'APPLIED'},
+    {work_type:'受限空间清理',location:'储罐区',applicant:'王海',plan_date:'2026-08-22',supervisor:'张伟',risk_desc:'气体检测+通风',status:'APPROVED'}
   ],
   loto_records: [
-    {equipment:'空压机',energy_type:'气动',lock_no:'LOTO-001',lock_date:'2026-08-15',unlock_date:'2026-08-16',operator:'周明'},
-    {equipment:'配电柜',energy_type:'电能',lock_no:'LOTO-002',lock_date:'2026-08-16',unlock_date:null,operator:'王海'}
+    {equipment:'空压机',energy_type:'气动',lock_no:'LOTO-001',lock_date:'2026-08-15',unlock_date:'2026-08-16',operator:'周明',status:'UNLOCKED'},
+    {equipment:'配电柜',energy_type:'电能',lock_no:'LOTO-002',lock_date:'2026-08-16',unlock_date:null,operator:'王海',status:'LOCKED'}
   ],
   hazardous_wastes: [
     {waste_name:'废机油',waste_code:'HW08',quantity:'200',unit:'千克',storage:'危废暂存间',transfer_date:'2026-08-25'},
     {waste_name:'废油漆桶',waste_code:'HW49',quantity:'50',unit:'个',storage:'危废暂存间',transfer_date:null}
   ],
   major_hazards: [
-    {name:'液氨储罐区',hazard_type:'有毒有害',level:'一级',location:'动力区',max_storage:'10吨',controller:'陈刚'},
-    {name:'液化气站',hazard_type:'易燃易爆',level:'二级',location:'厂区东侧',max_storage:'20吨',controller:'周明'}
+    {name:'液氨储罐区',hazard_type:'有毒有害',level:'一级',location:'动力区',max_storage:'10吨',controller:'陈刚',status:'IDENTIFIED'},
+    {name:'液化气站',hazard_type:'易燃易爆',level:'二级',location:'厂区东侧',max_storage:'20吨',controller:'周明',status:'FILED'}
   ],
   psm_records: [
     {process_name:'冲压工艺',method:'HAZOP',analysis_date:'2026-07-10',owner:'张伟',result:'识别3项风险，已落实管控'},
     {process_name:'焊接工艺',method:'PHA',analysis_date:'2026-07-15',owner:'李强',result:'风险可控'}
   ],
   fire_drills: [
-    {drill_type:'消防疏散演练',drill_date:'2026-08-10',organizer:'张伟',participants:80,result:'合格'},
-    {drill_type:'灭火器实操训练',drill_date:'2026-07-20',organizer:'王海',participants:30,result:'需改进'}
+    {drill_type:'消防疏散演练',drill_date:'2026-08-10',organizer:'张伟',participants:80,result:'合格',status:'PLANNED'},
+    {drill_type:'灭火器实操训练',drill_date:'2026-07-20',organizer:'王海',participants:30,result:'需改进',status:'COMPLETED'}
   ],
   wastes: [
     {waste_type:'废气',source:'焊接车间',quantity:'5000m³',treatment:'除尘后排放',discharge_date:'2026-08-16'},
@@ -1007,8 +1016,8 @@ var SEED = {
     {name:'医疗救护队',team_type:'医疗救护队',leader:'赵敏',members:'赵敏等6人',contact:'13800000004'}
   ],
   work_injuries: [
-    {employee:'李某',injury_type:'机械伤害',injury_date:'2026-07-15',location:'冲压车间',severity:'轻伤',status:'已处理',description:'手指擦伤'},
-    {employee:'王某',injury_type:'物体打击',injury_date:'2026-06-20',location:'装配车间',severity:'轻微伤',status:'已结案',description:'零件掉落砸伤'}
+    {employee:'李某',injury_type:'机械伤害',injury_date:'2026-07-15',location:'冲压车间',severity:'轻伤',status:'CLAIMED',description:'手指擦伤'},
+    {employee:'王某',injury_type:'物体打击',injury_date:'2026-06-20',location:'装配车间',severity:'轻微伤',status:'CLOSED',description:'零件掉落砸伤'}
   ],
   warning_rules: [
     {rule_name:'隐患逾期预警',metric:'隐患逾期数',threshold:'连续3天>0',rule_desc:'隐患逾期连续3天未清零时触发预警'},
