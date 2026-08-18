@@ -395,10 +395,10 @@ var MODULES=[
   {id:'I6',cat:'incident',name:'工伤管理',prio:'P2',type:'crud',table:'work_injuries',titleKey:'employee',desc:'工伤申报、医疗记录、保险理赔跟踪。',form:[{k:'employee',l:'员工姓名',t:'text',req:1},{k:'injury_type',l:'伤害类型',t:'select',opt:{'机械伤害':'机械伤害','触电':'触电','高处坠落':'高处坠落','物体打击':'物体打击','其他':'其他'}},{k:'injury_date',l:'受伤日期',t:'date'},{k:'location',l:'受伤地点',t:'text'},{k:'severity',l:'严重程度',t:'select',opt:{'轻微伤':'轻微伤','轻伤':'轻伤','重伤':'重伤','死亡':'死亡'}},{k:'description',l:'情况描述',t:'textarea'}],cols:[{k:'code',l:'编码'},{k:'employee',l:'员工'},{k:'injury_type',l:'伤害类型'},{k:'injury_date',l:'日期'},{k:'severity',l:'程度'},{k:'status',l:'状态',map:'injuryStatus'}],status:{key:'status',map:'injuryStatus',flow:'injuryStatus'},stats:[{by:'status',map:'injuryStatus'}]},
 
   // ⑪ 监测监控
-  {id:'S1',cat:'monitor',name:'IoT 在线监测',prio:'P2',type:'placeholder',desc:'气体/温湿度/液位/电流等传感器阈值监测。',subs:['设备接入','阈值规则','超限告警','历史曲线']},
-  {id:'S2',cat:'monitor',name:'AI 视觉识别',prio:'P2',type:'placeholder',desc:'未戴安全帽/明火/区域入侵等 AI 识别。',subs:['摄像头接入','置信度门槛','告警联动']},
-  {id:'S3',cat:'monitor',name:'视频监控联动',prio:'P2',type:'placeholder',desc:'与报警/作业票/定位联动的视频调阅。',subs:['点位关联','报警自动弹窗','录像回放']},
-  {id:'S4',cat:'monitor',name:'人员定位与围栏',prio:'P2',type:'placeholder',desc:'人员实时定位、电子围栏、SOS。',subs:['定位标签','越界/超时告警','SOS 求助']},
+  {id:'S1',cat:'monitor',name:'IoT 在线监测',prio:'P2',type:'placeholder',desc:'气体/温湿度/液位/电流等传感器阈值监测。（依赖真实传感器硬件，纯前端占位演示）',subs:['设备接入','阈值规则','超限告警','历史曲线']},
+  {id:'S2',cat:'monitor',name:'AI 视觉识别',prio:'P2',type:'placeholder',desc:'未戴安全帽/明火/区域入侵等 AI 识别。（依赖摄像头与 AI 推理硬件，纯前端占位演示）',subs:['摄像头接入','置信度门槛','告警联动']},
+  {id:'S3',cat:'monitor',name:'视频监控联动',prio:'P2',type:'placeholder',desc:'与报警/作业票/定位联动的视频调阅。（依赖视频监控平台，纯前端占位演示）',subs:['点位关联','报警自动弹窗','录像回放']},
+  {id:'S4',cat:'monitor',name:'人员定位与围栏',prio:'P2',type:'placeholder',desc:'人员实时定位、电子围栏、SOS。（依赖定位标签硬件，纯前端占位演示）',subs:['定位标签','越界/超时告警','SOS 求助']},
   {id:'S5',cat:'monitor',name:'报警管理',prio:'P1',type:'crud',table:'alarms',titleKey:'content',desc:'全系统告警统一汇聚与处置闭环。',form:[{k:'content',l:'告警内容',t:'text',req:1},{k:'source',l:'告警来源',t:'text'},{k:'level',l:'告警级别',t:'select',opt:{'紧急':'紧急','重要':'重要','一般':'一般'}},{k:'occurred_at',l:'发生时间',t:'datetime'},{k:'handler',l:'处置人',t:'text'}],cols:[{k:'code',l:'编码'},{k:'source',l:'来源'},{k:'level',l:'级别'},{k:'content',l:'内容'},{k:'occurred_at',l:'时间'},{k:'status',l:'状态',map:'alarmStatus'}],status:{key:'status',map:'alarmStatus',flow:'alarmStatus'},stats:[{by:'status',map:'alarmStatus'}]},
 
   // ⑫ 数据智能
@@ -409,9 +409,9 @@ var MODULES=[
 
   // ⑬ 协同办公
   {id:'O1',cat:'collab',name:'钉钉集成',prio:'P0',type:'integration',desc:'免登、消息、待办、审批、通讯录同步（办公主体）。'},
-  {id:'O2',cat:'collab',name:'移动端',prio:'P0',type:'feature',desc:'钉钉 H5 微应用：随手拍/扫码/审批/学习。',subs:['拍照压缩上传','离线队列','扫码点检','语音输入']},
+  {id:'O2',cat:'collab',name:'移动端',prio:'P0',type:'feature',desc:'钉钉 H5 微应用：随手拍/扫码/审批/学习。（依赖钉钉开放平台接入，与门户共享同一数据后端）',subs:['拍照压缩上传','离线队列','扫码点检','语音输入']},
   {id:'O3',cat:'collab',name:'门户工作台',prio:'P0',type:'feature',desc:'按角色动态渲染的工作台首页（即本门户）。',subs:['角色宫格','待办聚合','消息通知','快捷入口']},
-  {id:'O4',cat:'collab',name:'任务协同',prio:'P2',type:'crud',table:'shift_handovers',titleKey:'handover_from',desc:'交接班、检查任务指派等轻量协同。',form:[{k:'handover_from',l:'交班人',t:'text',req:1},{k:'handover_to',l:'接班人',t:'text'},{k:'shift_date',l:'交接日期',t:'date'},{k:'shift_type',l:'班次',t:'select',opt:{'白班':'白班','夜班':'夜班'}},{k:'content',l:'交接内容',t:'textarea'}],cols:[{k:'code',l:'编码'},{k:'shift_date',l:'日期'},{k:'shift_type',l:'班次'},{k:'handover_from',l:'交班人'},{k:'handover_to',l:'接班人'}],stats:[{by:'shift_type',map:null}]}
+  {id:'O4',cat:'collab',name:'交接班',prio:'P2',type:'crud',table:'shift_handovers',titleKey:'handover_from',desc:'班组交接班台账：交班人/接班人/班次/交接内容。',form:[{k:'handover_from',l:'交班人',t:'text',req:1},{k:'handover_to',l:'接班人',t:'text'},{k:'shift_date',l:'交接日期',t:'date'},{k:'shift_type',l:'班次',t:'select',opt:{'白班':'白班','夜班':'夜班'}},{k:'content',l:'交接内容',t:'textarea'}],cols:[{k:'code',l:'编码'},{k:'shift_date',l:'日期'},{k:'shift_type',l:'班次'},{k:'handover_from',l:'交班人'},{k:'handover_to',l:'接班人'}],stats:[{by:'shift_type',map:null}]}
 ];
 
 var byId={}; MODULES.forEach(function(m){byId[m.id]=m;});
