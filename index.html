@@ -274,7 +274,19 @@ var L={
   invMethod:{'5WHY':'5Why',FTA:'故障树','4M':'4M法',HAZOP:'HAZOP'},
   capaSource:{'事故':'事故','审核':'审核','演练':'演练','隐患':'隐患'},
   capaStatus:{OPEN:'待处理',DOING:'执行中',DONE:'已完成',VERIFIED:'已验证'},
-  backupStatus:{SUCCESS:'成功',FAILED:'失败',RUNNING:'进行中'}
+  backupStatus:{SUCCESS:'成功',FAILED:'失败',RUNNING:'进行中'},
+  contractorStatus:{ACTIVE:'合作中',TERMINATED:'已终止'},
+  workerStatus:{PENDING:'待入厂',ADMITTED:'已入厂'},
+  facilityType:{EXTINGUISHER:'灭火器',HYDRANT:'消火栓',SPRINKLER:'喷淋',SMOKE_DETECTOR:'烟感',FIRE_DOOR:'防火门',EMERGENCY_LIGHT:'应急照明'},
+  facilityStatus:{NORMAL:'正常',EXPIRED:'检测到期',BROKEN:'故障'},
+  patrolType:{PRE_SHIFT:'班前',DAILY:'日常',NIGHT:'夜间'},
+  patrolResult:{PASS:'正常',ABNORMAL:'异常'},
+  planStatus:{DRAFT:'编制中',PUBLISHED:'已发布'},
+  drillStatus:{PLANNED:'计划中',COMPLETED:'已完成'},
+  supplyStatus:{NORMAL:'正常',EXPIRING:'临期',EXPIRED:'已过期'},
+  erStatus:{ACTIVATED:'已启动',UPGRADED:'已升级',DISPOSING:'处置中',RECOVERING:'恢复中',CLOSED:'已关闭'},
+  erLevel:{GENERAL:'一般',SERIOUS:'较大',CRITICAL:'重大'},
+  storageGroup:{FLAMMABLE:'易燃',OXIDIZER:'氧化性',CORROSIVE:'腐蚀性',TOXIC:'毒性',INERT:'惰性'}
 };
 // 下一步状态：从后端 STATE_NEXT 单一真源推导（取 allowed 列表首个正向状态），不再维护前端副本
 function nextOf(table, status){
@@ -359,10 +371,10 @@ var MODULES=[
   {id:'N3',cat:'env',name:'环保合规检查',prio:'P2',type:'crud',table:'env_checks',titleKey:'check_type',desc:'环保检查、问题整改闭环、环保档案。',form:[{k:'check_type',l:'检查类型',t:'text',req:1},{k:'check_date',l:'检查日期',t:'date'},{k:'checker',l:'检查人',t:'text'},{k:'result',l:'检查结果',t:'select',opt:{'合格':'合格','不合格':'不合格'}},{k:'issue',l:'发现问题',t:'textarea'}],cols:[{k:'code',l:'编码'},{k:'check_type',l:'类型'},{k:'check_date',l:'日期'},{k:'checker',l:'检查人'},{k:'result',l:'结果'}],stats:[{by:'result',map:null}]},
 
   // ⑨ 应急管理
-  {id:'R1',cat:'emerg',name:'应急预案',prio:'P1',type:'crud',table:'emergency_plans',titleKey:'name',desc:'预案库版本化管理（GB/T 29639-2020）。',form:[{k:'name',l:'预案名称',t:'text',req:1},{k:'plan_type',l:'预案类型',t:'select',opt:{'综合':'综合','专项':'专项','现场处置':'现场处置'}},{k:'version',l:'版本号',t:'text'},{k:'issue_date',l:'发布日期',t:'date'},{k:'review_date',l:'评审日期',t:'date'}],cols:[{k:'code',l:'编码'},{k:'name',l:'预案名称'},{k:'plan_type',l:'类型'},{k:'version',l:'版本'},{k:'review_date',l:'评审日期'}],stats:[{by:'plan_type',map:null}]},
-  {id:'R2',cat:'emerg',name:'应急演练',prio:'P1',type:'crud',table:'emergency_drills',titleKey:'drill_type',desc:'演练计划、执行记录、评估。',form:[{k:'drill_type',l:'演练类型',t:'text',req:1},{k:'drill_date',l:'演练日期',t:'date'},{k:'organizer',l:'组织人',t:'text'},{k:'result',l:'演练结果',t:'select',opt:{'合格':'合格','需改进':'需改进'}},{k:'issue',l:'发现问题',t:'textarea'}],cols:[{k:'code',l:'编码'},{k:'drill_type',l:'演练类型'},{k:'drill_date',l:'日期'},{k:'organizer',l:'组织人'},{k:'result',l:'结果'}],stats:[{by:'result',map:null}]},
+  {id:'R1',cat:'emerg',name:'应急预案',prio:'P1',type:'crud',table:'emergency_plans',titleKey:'name',desc:'预案库版本化管理（GB/T 29639-2020）。',form:[{k:'name',l:'预案名称',t:'text',req:1},{k:'plan_type',l:'预案类型',t:'select',opt:{'综合':'综合','专项':'专项','现场处置':'现场处置'}},{k:'version',l:'版本号',t:'text'},{k:'issue_date',l:'发布日期',t:'date'},{k:'review_date',l:'评审日期',t:'date'},{k:'status',l:'状态',t:'select',opt:L.planStatus}],cols:[{k:'code',l:'编码'},{k:'name',l:'预案名称'},{k:'plan_type',l:'类型'},{k:'version',l:'版本'},{k:'review_date',l:'评审日期'},{k:'status',l:'状态',map:'planStatus'}],status:{key:'status',map:'planStatus',flow:'planStatus'},stats:[{by:'status',map:'planStatus'}]},
+  {id:'R2',cat:'emerg',name:'应急演练',prio:'P1',type:'crud',table:'emergency_drills',titleKey:'drill_type',desc:'演练计划、执行记录、评估。',form:[{k:'drill_type',l:'演练类型',t:'text',req:1},{k:'drill_date',l:'演练日期',t:'date'},{k:'organizer',l:'组织人',t:'text'},{k:'result',l:'演练结果',t:'select',opt:{'合格':'合格','需改进':'需改进'}},{k:'issue',l:'发现问题',t:'textarea'},{k:'status',l:'状态',t:'select',opt:L.drillStatus}],cols:[{k:'code',l:'编码'},{k:'drill_type',l:'演练类型'},{k:'drill_date',l:'日期'},{k:'organizer',l:'组织人'},{k:'result',l:'结果'},{k:'status',l:'状态',map:'drillStatus'}],status:{key:'status',map:'drillStatus',flow:'drillStatus'},stats:[{by:'status',map:'drillStatus'}]},
   {id:'R3',cat:'emerg',name:'应急物资',prio:'P1',type:'crud',table:'emergency_supplies',titleKey:'name',desc:'应急物资/装备台账与效期管理。',form:[{k:'name',l:'物资名称',t:'text',req:1},{k:'supply_type',l:'物资类型',t:'text'},{k:'quantity',l:'数量',t:'number'},{k:'unit',l:'单位',t:'text'},{k:'location',l:'存放位置',t:'text'},{k:'expire_date',l:'有效期至',t:'date'}],cols:[{k:'code',l:'编码'},{k:'name',l:'物资'},{k:'supply_type',l:'类型'},{k:'quantity',l:'数量'},{k:'location',l:'位置'},{k:'expire_date',l:'有效期'}],stats:[{by:'supply_type',map:null}]},
-  {id:'R4',cat:'emerg',name:'应急响应',prio:'P1',type:'crud',table:'emergency_responses',titleKey:'incident',desc:'一键启动预案、响应流程、信息上报。',form:[{k:'incident',l:'事件名称',t:'text',req:1},{k:'start_time',l:'启动时间',t:'datetime'},{k:'level',l:'响应级别',t:'select',opt:{'重大':'重大','较大':'较大','一般':'一般'}},{k:'commander',l:'指挥人',t:'text'},{k:'summary',l:'响应总结',t:'textarea'}],cols:[{k:'code',l:'编码'},{k:'incident',l:'事件'},{k:'level',l:'级别'},{k:'start_time',l:'启动时间'},{k:'commander',l:'指挥人'},{k:'status',l:'状态'}],stats:[{by:'level',map:null}]},
+  {id:'R4',cat:'emerg',name:'应急响应',prio:'P1',type:'crud',table:'emergency_responses',titleKey:'incident',desc:'一键启动预案、响应流程、信息上报。',form:[{k:'incident',l:'事件名称',t:'text',req:1},{k:'start_time',l:'启动时间',t:'datetime'},{k:'level',l:'响应级别',t:'select',opt:L.erLevel},{k:'commander',l:'指挥人',t:'text'},{k:'summary',l:'响应总结',t:'textarea'},{k:'status',l:'状态',t:'select',opt:L.erStatus}],cols:[{k:'code',l:'编码'},{k:'incident',l:'事件'},{k:'level',l:'级别',map:'erLevel'},{k:'start_time',l:'启动时间'},{k:'commander',l:'指挥人'},{k:'status',l:'状态',map:'erStatus'}],status:{key:'status',map:'erStatus',flow:'erStatus'},stats:[{by:'status',map:'erStatus'}]},
   {id:'R5',cat:'emerg',name:'应急队伍',prio:'P2',type:'crud',table:'emergency_teams',titleKey:'name',desc:'应急组织、值班排班、联络人。',form:[{k:'name',l:'队伍名称',t:'text',req:1},{k:'team_type',l:'队伍类型',t:'select',opt:{'义务消防队':'义务消防队','应急救援队':'应急救援队','医疗救护队':'医疗救护队'}},{k:'leader',l:'队长',t:'text'},{k:'members',l:'成员名单',t:'textarea'},{k:'contact',l:'联系方式',t:'text'}],cols:[{k:'code',l:'编码'},{k:'name',l:'队伍'},{k:'team_type',l:'类型'},{k:'leader',l:'队长'},{k:'contact',l:'联系方式'}],stats:[{by:'team_type',map:null}]},
 
   // ⑩ 事故事件
