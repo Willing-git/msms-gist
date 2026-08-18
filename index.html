@@ -325,6 +325,7 @@ var MODULES=[
   {id:'P7',cat:'plat',name:'文件存储',prio:'P0',type:'crud',table:'files',titleKey:'name',desc:'图片/音视频/文档统一上传下载，类型白名单 + sha256 + OSS 扩展。',form:[{k:'name',l:'文件名',t:'text',req:1},{k:'file_type',l:'类型',t:'text'},{k:'file_size',l:'大小(字节)',t:'number'},{k:'uploaded_by',l:'上传人',t:'text'},{k:'url',l:'URL',t:'text'}],cols:[{k:'name',l:'文件名'},{k:'file_type',l:'类型'},{k:'file_size',l:'大小'},{k:'uploaded_by',l:'上传人'},{k:'created_at',l:'时间'}],stats:[{by:'file_type',map:null}]},
   {id:'P8',cat:'plat',name:'统一工单引擎',prio:'P0',type:'crud',table:'tickets',titleKey:'title',desc:'隐患整改/审批/维保/CAPA 等全部任务统一建模，状态机+催办+升级。',form:[{k:'title',l:'标题',t:'text',req:1},{k:'biz_type',l:'业务类型',t:'select',opt:L.ticketType},{k:'owner',l:'责任人',t:'text'},{k:'deadline',l:'截止',t:'date'}],cols:[{k:'code',l:'编码'},{k:'title',l:'标题'},{k:'biz_type',l:'类型',map:'ticketType'},{k:'owner',l:'责任人'},{k:'deadline',l:'截止'},{k:'status',l:'状态',map:'ticketStatus'}],status:{key:'status',map:'ticketStatus',flow:'ticketStatus'},stats:[{by:'status',map:'ticketStatus'}]},
   {id:'P9',cat:'plat',name:'数据备份与恢复',prio:'P0',type:'crud',table:'backups',titleKey:'name',desc:'定时备份、加密存储、版本保留、恢复演练与 PIPL 数据销毁。',form:[{k:'name',l:'备份名称',t:'text',req:1},{k:'backup_size',l:'大小',t:'text'},{k:'status',l:'状态',t:'select',opt:L.backupStatus}],cols:[{k:'name',l:'名称'},{k:'backup_size',l:'大小'},{k:'status',l:'状态',map:'backupStatus'},{k:'created_at',l:'时间'}],stats:[{by:'status',map:'backupStatus'}]},
+  {id:'DH',cat:'plat',name:'DataHub 数据接入',prio:'P0',type:'datahub',desc:'T1 数据导入（CSV 粘贴 + 模板下载 + 行级校验报告），覆盖隐患/设备/证书/人员四表。'},
 
   // ② 双重预防
   {id:'D1',cat:'double',name:'风险分级管控',prio:'P0',type:'crud',table:'risk_units',titleKey:'name',desc:'危险源辨识→LEC 评估→四级分级→管控措施，业务主线之一。',form:[{k:'name',l:'风险单元',t:'text',req:1},{k:'dept',l:'部门',t:'text'},{k:'owner',l:'责任人',t:'text'},{k:'l',l:'L 可能性',t:'number'},{k:'e',l:'E 暴露',t:'number'},{k:'c',l:'C 后果',t:'number'},{k:'measure',l:'管控措施',t:'textarea'}],cols:[{k:'code',l:'编码'},{k:'name',l:'风险单元'},{k:'l',l:'L'},{k:'e',l:'E'},{k:'c',l:'C'},{k:'level',l:'等级',map:'riskLevel'},{k:'dept',l:'部门'},{k:'owner',l:'责任人'},{k:'measure',l:'管控措施'}],stats:[{by:'level',map:'riskLevel'}]},
@@ -374,7 +375,7 @@ var MODULES=[
   {id:'R1',cat:'emerg',name:'应急预案',prio:'P1',type:'crud',table:'emergency_plans',titleKey:'name',desc:'预案库版本化管理（GB/T 29639-2020）。',form:[{k:'name',l:'预案名称',t:'text',req:1},{k:'plan_type',l:'预案类型',t:'select',opt:{'综合':'综合','专项':'专项','现场处置':'现场处置'}},{k:'version',l:'版本号',t:'text'},{k:'issue_date',l:'发布日期',t:'date'},{k:'review_date',l:'评审日期',t:'date'},{k:'status',l:'状态',t:'select',opt:L.planStatus}],cols:[{k:'code',l:'编码'},{k:'name',l:'预案名称'},{k:'plan_type',l:'类型'},{k:'version',l:'版本'},{k:'review_date',l:'评审日期'},{k:'status',l:'状态',map:'planStatus'}],status:{key:'status',map:'planStatus',flow:'planStatus'},stats:[{by:'status',map:'planStatus'}]},
   {id:'R2',cat:'emerg',name:'应急演练',prio:'P1',type:'crud',table:'emergency_drills',titleKey:'drill_type',desc:'演练计划、执行记录、评估。',form:[{k:'drill_type',l:'演练类型',t:'text',req:1},{k:'drill_date',l:'演练日期',t:'date'},{k:'organizer',l:'组织人',t:'text'},{k:'result',l:'演练结果',t:'select',opt:{'合格':'合格','需改进':'需改进'}},{k:'issue',l:'发现问题',t:'textarea'},{k:'status',l:'状态',t:'select',opt:L.drillStatus}],cols:[{k:'code',l:'编码'},{k:'drill_type',l:'演练类型'},{k:'drill_date',l:'日期'},{k:'organizer',l:'组织人'},{k:'result',l:'结果'},{k:'status',l:'状态',map:'drillStatus'}],status:{key:'status',map:'drillStatus',flow:'drillStatus'},stats:[{by:'status',map:'drillStatus'}]},
   {id:'R3',cat:'emerg',name:'应急物资',prio:'P1',type:'crud',table:'emergency_supplies',titleKey:'name',desc:'应急物资/装备台账与效期管理。',form:[{k:'name',l:'物资名称',t:'text',req:1},{k:'supply_type',l:'物资类型',t:'text'},{k:'quantity',l:'数量',t:'number'},{k:'unit',l:'单位',t:'text'},{k:'location',l:'存放位置',t:'text'},{k:'expire_date',l:'有效期至',t:'date'}],cols:[{k:'code',l:'编码'},{k:'name',l:'物资'},{k:'supply_type',l:'类型'},{k:'quantity',l:'数量'},{k:'location',l:'位置'},{k:'expire_date',l:'有效期'}],stats:[{by:'supply_type',map:null}]},
-  {id:'R4',cat:'emerg',name:'应急响应',prio:'P1',type:'crud',table:'emergency_responses',titleKey:'incident',desc:'一键启动预案、响应流程、信息上报。',form:[{k:'incident',l:'事件名称',t:'text',req:1},{k:'start_time',l:'启动时间',t:'datetime'},{k:'level',l:'响应级别',t:'select',opt:L.erLevel},{k:'commander',l:'指挥人',t:'text'},{k:'summary',l:'响应总结',t:'textarea'},{k:'status',l:'状态',t:'select',opt:L.erStatus}],cols:[{k:'code',l:'编码'},{k:'incident',l:'事件'},{k:'level',l:'级别',map:'erLevel'},{k:'start_time',l:'启动时间'},{k:'commander',l:'指挥人'},{k:'status',l:'状态',map:'erStatus'}],status:{key:'status',map:'erStatus',flow:'erStatus'},stats:[{by:'status',map:'erStatus'}]},
+  {id:'R4',cat:'emerg',name:'应急响应',prio:'P1',type:'emergency',desc:'一键启动应急响应（双通道全员通知），响应状态机：启动→处置→恢复→关闭（复盘）。'},
   {id:'R5',cat:'emerg',name:'应急队伍',prio:'P2',type:'crud',table:'emergency_teams',titleKey:'name',desc:'应急组织、值班排班、联络人。',form:[{k:'name',l:'队伍名称',t:'text',req:1},{k:'team_type',l:'队伍类型',t:'select',opt:{'义务消防队':'义务消防队','应急救援队':'应急救援队','医疗救护队':'医疗救护队'}},{k:'leader',l:'队长',t:'text'},{k:'members',l:'成员名单',t:'textarea'},{k:'contact',l:'联系方式',t:'text'}],cols:[{k:'code',l:'编码'},{k:'name',l:'队伍'},{k:'team_type',l:'类型'},{k:'leader',l:'队长'},{k:'contact',l:'联系方式'}],stats:[{by:'team_type',map:null}]},
 
   // ⑩ 事故事件
@@ -456,6 +457,8 @@ function renderView(m){
   if(m.type==='permit') return renderPermit(m,c);
   if(m.type==='training') return renderTraining(m,c);
   if(m.type==='exam') return renderExam(m,c);
+  if(m.type==='datahub') return renderDatahub(m,c);
+  if(m.type==='emergency') return renderEmergency(m,c);
 }
 
 /* CRUD / 只读 */
@@ -706,6 +709,61 @@ async function startExam(paperId){ try{ var d=await api('POST','/api/exam/start'
   document.getElementById('e-quiz').innerHTML='<div class="card"><h3>在线答题 · '+esc(d.paper.name)+'（及格 '+esc(d.paper.pass_score||60)+' 分）</h3>'+html+'<button class="btn" onclick="submitExam()">交卷</button><div id="e-score"></div></div>';
 }catch(e){ alert(e.message); } }
 async function submitExam(){ var ans=[]; Object.keys(__answers).forEach(function(id){ ans.push({id:Number(id),answer:__answers[id]}); }); try{ var d=await api('POST','/api/exam/submit',{paper_id:__paperId,answers:ans}); document.getElementById('e-score').innerHTML='<div style="margin-top:12px;font-size:15px">得分 <b>'+d.score+'</b> / '+d.total+'（'+d.pass_score+' 分及格）'+(d.passed?' <span class="pill ok">通过</span>':' <span class="pill danger">未通过</span>')+'</div>'; }catch(e){ alert(e.message); } }
+
+/* ===== R4 应急响应（一键启动） ===== */
+function renderEmergency(m,c){
+  c.innerHTML='<div class="page-head"><h1>'+esc(m.name)+'</h1><span class="prio p1">P1</span></div><p class="desc">'+esc(m.desc)+'</p>'
+    +'<div class="card" style="margin-bottom:14px"><h3>一键启动应急响应</h3>'
+    +'<div class="form-row"><div class="field"><label>事件情景 *</label><input id="er-incident" placeholder="例：焊接飞溅引燃油污"></div><div class="field"><label>响应级别</label><select id="er-level">'+Object.keys(L.erLevel).map(function(k){return '<option value="'+k+'">'+L.erLevel[k]+'</option>';}).join('')+'</select></div></div>'
+    +'<div class="form-row"><div class="field"><label>发生位置</label><input id="er-location" placeholder="例：冲压车间"></div><div class="field"><label>现场指挥</label><input id="er-commander" placeholder="姓名"></div></div>'
+    +'<button class="btn" style="background:var(--danger-500)" onclick="activateEr()">立即启动（全员通知）</button><div class="msg" id="er-msg"></div></div>'
+    +'<div class="card"><h3>响应台账（状态机：启动→处置→恢复→关闭）</h3><div class="table-wrap" id="er-list"></div></div>';
+  loadErList();
+}
+async function activateEr(){
+  var body={incident:document.getElementById('er-incident').value.trim(),summary:document.getElementById('er-location').value.trim(),level:document.getElementById('er-level').value,commander:document.getElementById('er-commander').value.trim()};
+  var msg=document.getElementById('er-msg');
+  if(!body.incident){ msg.className='msg err'; msg.textContent='请填写事件情景'; return; }
+  try{ var d=await api('POST','/api/emergency/activate',body); msg.className='msg'; msg.textContent='已启动 '+d.code+'，站内信+钉钉双通道已全员通知'; loadErList(); }
+  catch(e){ msg.className='msg err'; msg.textContent=esc(e.message); }
+}
+async function loadErList(){
+  try{ var list=await api('GET','/api/table/emergency_responses'); setDb(true,'数据库已连接');
+    document.getElementById('er-list').innerHTML=list.length?'<table><thead><tr><th>编码</th><th>情景</th><th>级别</th><th>指挥</th><th>启动时间</th><th>状态</th><th></th></tr></thead><tbody>'+list.map(function(x){ var next=nextOf('emergency_responses',x.status); return '<tr><td class="code">'+esc(x.code)+'</td><td>'+esc(x.incident)+'</td><td>'+pill(L.erLevel[x.level]||x.level,pillCls(x.level))+'</td><td>'+esc(x.commander||'-')+'</td><td>'+esc(String(x.start_time||'').slice(0,16).replace('T',' '))+'</td><td>'+pill(L.erStatus[x.status]||x.status,pillCls(x.status))+'</td><td>'+(next?'<button class="btn mini" onclick="erAdvance('+x.id+')">推进→'+L.erStatus[next]+'</button>':'<span class="pill ok">已关闭</span>')+'</td></tr>'; }).join('')+'</tbody></table>':'<div class="empty">暂无响应记录</div>';
+  }catch(e){ setDb(false,'数据库未连接'); }
+}
+async function erAdvance(id){ try{ var list=await api('GET','/api/table/emergency_responses'); var x=list.find(function(o){return o.id===id;}); var next=nextOf('emergency_responses',x.status); if(next){ await api('PATCH','/api/table/emergency_responses/'+id,{status:next}); loadErList(); } }catch(e){ alert(e.message); } }
+
+/* ===== DH DataHub 数据导入 ===== */
+var DH_FIELDS={hazards:[['title','隐患描述*'],['dept','部门'],['location','位置'],['assignee','责任人'],['level','等级(GENERAL/MAJOR)']],equipment:[['name','设备名称*'],['dept','部门'],['category','类别(SPECIAL/COMMON)']],certificates:[['holder','持证人*'],['cert_type','类型'],['cert_no','证书编号'],['expire_date','到期日期(YYYY-MM-DD)']],users:[['name','姓名*'],['emp_no','工号*'],['dept','部门'],['phone','手机']]};
+function renderDatahub(m,c){
+  c.innerHTML='<div class="page-head"><h1>'+esc(m.name)+'</h1><span class="prio '+m.prio.toLowerCase()+'">'+m.prio+'</span></div><p class="desc">'+esc(m.desc)+'</p>'
+    +'<div class="split"><div class="card"><h3>T1 数据导入</h3>'
+    +'<div class="form-row"><div class="field"><label>目标表 *</label><select id="dh-table">'+Object.keys(DH_FIELDS).map(function(k){return '<option value="'+k+'">'+k+'</option>';}).join('')+'</select></div><div class="field"><label>下载模板</label><button class="btn ghost" style="width:100%" onclick="dhTemplate()">下载 CSV 模板</button></div></div>'
+    +'<div class="field" style="margin-bottom:10px"><label>粘贴 CSV 数据（首行表头，逗号分隔）</label><textarea id="dh-csv" style="min-height:140px" placeholder="title,dept,location&#10;车间通道堆放纸箱,冲压车间,A2 通道"></textarea></div>'
+    +'<button class="btn" onclick="dhImport()">开始导入</button><div class="msg" id="dh-msg"></div></div>'
+    +'<div class="card"><h3>导入报告</h3><div id="dh-report"><div class="empty">暂无导入记录</div></div></div></div>';
+}
+function dhTemplate(){ var t=document.getElementById('dh-table').value; var header=DH_FIELDS[t].map(function(f){return f[0];}).join(','); var row=DH_FIELDS[t].map(function(f,i){return i===0?('示例'+f[1].replace('*','')):'';}).join(','); var csv='\ufeff'+header+'\r\n'+row+'\r\n'; var b=new Blob([csv],{type:'text/csv;charset=utf-8'}); var a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=t+'-import-template.csv'; a.click(); URL.revokeObjectURL(a.href); }
+function parseCsv(text){
+  var lines=text.replace(/\r/g,'').split('\n').filter(function(l){return l.trim();});
+  if(lines.length<2) throw new Error('至少需要表头+1行数据');
+  function parseLine(line){ var out=[],cur='',inQ=false; for(var i=0;i<line.length;i++){ var ch=line[i]; if(ch==='"'){ if(inQ&&line[i+1]==='"'){cur+='"';i++;} else inQ=!inQ; } else if(ch===','&&!inQ){ out.push(cur);cur=''; } else cur+=ch; } out.push(cur); return out; }
+  var header=parseLine(lines[0]); var rows=[];
+  for(var i=1;i<lines.length;i++){ var cells=parseLine(lines[i]); var o={}; header.forEach(function(h,j){ if(h.trim()) o[h.trim()]=String(cells[j]||'').trim(); }); rows.push(o); }
+  return rows;
+}
+async function dhImport(){
+  var t=document.getElementById('dh-table').value, csv=document.getElementById('dh-csv').value.trim(), msg=document.getElementById('dh-msg');
+  if(!csv){ msg.className='msg err'; msg.textContent='请粘贴 CSV 数据'; return; }
+  var rows; try{ rows=parseCsv(csv); }catch(e){ msg.className='msg err'; msg.textContent='CSV 解析失败：'+esc(e.message); return; }
+  try{
+    var r=await api('POST','/api/datahub/import',{table:t,rows:rows});
+    var errHtml=(r.errors||[]).slice(0,20).map(function(e2){return '<div style="color:var(--danger-500);font-size:12px">第 '+e2.row+' 行：'+esc(e2.reason)+'</div>';}).join('');
+    document.getElementById('dh-report').innerHTML='<div class="chips"><span class="chip">成功：'+r.ok+'</span><span class="chip">失败：'+r.fail+'</span></div>'+(errHtml||'<div class="note">全部导入成功</div>');
+    msg.className='msg'; msg.textContent='导入完成';
+  }catch(e){ msg.className='msg err'; msg.textContent=esc(e.message); }
+}
 
 /* ===== 初始化 ===== */
 (async function init(){
