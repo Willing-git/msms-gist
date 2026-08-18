@@ -49,12 +49,12 @@ var SCHEMA = {
   safety_facilities:  { cols:['code','name','facility_type','location','check_date','status'], req:['name'], prefix:'SF' },
   equipment_lifecycle:{ cols:['code','equipment','event_type','event_date','reason','operator'], req:['equipment'], prefix:'EL' },
   chemicals:          { cols:['code','name','cas_no','ghs_class','storage_group','incompatible_groups','msds_url','qty','unit','location','status'], req:['name','msds_url'], prefix:'CH' },
-  fire_facilities:    { cols:['code','name','facility_type','location','check_date','expire_date','status'], req:['name'], prefix:'FF' },
-  fire_patrols:       { cols:['code','patrol_date','area','inspector','result','issue_desc','status'], req:['area'], prefix:'FP' },
+  fire_facilities:    { cols:['code','name','facility_type','location','last_check_date','next_check_date','status'], req:['name'], prefix:'FF' },
+  fire_patrols:       { cols:['code','patrol_type','area','patroller','patrol_date','result','remark','status'], req:['area'], prefix:'FP' },
   fire_drills:        { cols:['code','drill_date','drill_type','organizer','participants','result','status'], req:['drill_type'], prefix:'FD' },
-  emergency_plans:    { cols:['code','name','plan_type','version','issue_date','review_date','status'], req:['name'], prefix:'EP' },
-  emergency_drills:   { cols:['code','drill_date','drill_type','organizer','result','issue','status'], req:['drill_type'], prefix:'ED' },
-  emergency_supplies: { cols:['code','name','supply_type','quantity','unit','expire_date','location','status'], req:['name'], prefix:'ES' },
+  emergency_plans:    { cols:['code','name','version','scenario','publish_date','status'], req:['name'], prefix:'EP' },
+  emergency_drills:   { cols:['code','name','plan_name','drill_date','organizer','participants','evaluation','status'], req:['name'], prefix:'ED' },
+  emergency_supplies: { cols:['code','name','category','qty','expire_date','location','status'], req:['name'], prefix:'ES' },
   emergency_responses:{ cols:['code','incident','start_time','level','commander','status','summary'], req:['incident'], prefix:'ER' },
   emergency_teams:    { cols:['code','name','team_type','leader','members','contact','status'], req:['name'], prefix:'ET' },
   near_misses:        { cols:['code','title','category','location','occurred_at','reporter','description','status'], req:['title'], prefix:'NM' },
@@ -447,6 +447,29 @@ async function route(method, path, body){
     return { closed:true, ticket:tk };
   }
 
+  /* ---- F2 防火巡查转隐患 ---- */
+  var patrolMatch = path.match(/^\/api\/fire-patrol\/(\d+)\/to-hazard$/);
+  if(patrolMatch && method === 'POST'){
+    var fpid = Number(patrolMatch[1]);
+    var fp = await getById('fire_patrols', fpid);
+    if(!fp) throw httpErr('NOT_FOUND');
+    var allHaz = await listAll('hazards');
+    var dupHaz = allHaz.filter(function(h){ return h.source==='巡查' && h.source_id===fp.code; });
+    if(dupHaz.length) return { hazard:dupHaz[0], existed:true };
+    var hzCode = await codeGen('HD');
+    var hzDeadline = localDate(new Date(Date.now()+3*86400000));
+    var createdId = await putRow('hazards', {
+      code:hzCode, title:('消防巡查异常：'+(fp.area||'')), category:'消防', level:'GENERAL',
+      dept:'', location:fp.area||'', assignee:fp.patroller||'', status:'REPORTED',
+      rectify_deadline:hzDeadline, discover_channel:'巡查', source:'巡查', source_id:fp.code,
+      created_at:new Date().toISOString()
+    });
+    var hzRow = await getById('hazards', createdId);
+    await auditLog(__currentUser.name, 'CREATE', 'hazards', hzCode);
+    await notifySend({ title:'消防巡查异常转隐患', content:'隐患 '+hzCode+'：'+(fp.area||''), to_user:fp.patroller||'' });
+    return { hazard:hzRow, existed:false };
+  }
+
   /* ---- W2 承包商：入厂校验 ---- */
   var admitMatch = path.match(/^\/api\/contractors\/(\d+)\/admit$/);
   if(admitMatch && method === 'POST'){
@@ -542,6 +565,9 @@ async function route(method, path, body){
       }
       if(t === 'risk_units' && (row.l!=null || row.e!=null || row.c!=null)){
         var r = riskCalc(row.l||1, row.e||1, row.c||1); row.level = r.level;
+      }
+      if(STATE_NEXT[t] && !row.status){
+        row.status = Object.keys(STATE_NEXT[t])[0];
       }
       row.created_at = new Date().toISOString();
       var newId = await putRow(t, row);
@@ -903,24 +929,24 @@ var SEED = {
     {name:'液碱',cas_no:'1310-73-2',ghs_class:'腐蚀品',storage_group:'CORROSIVE',incompatible_groups:'FLAMMABLE',msds_url:'/msds/naoh.pdf',qty:100,unit:'kg',location:'化学品库B区'}
   ],
   fire_facilities: [
-    {name:'干粉灭火器',facility_type:'灭火器',location:'冲压车间东门',check_date:'2026-08-10',expire_date:'2027-08-10'},
-    {name:'室内消火栓',facility_type:'消火栓',location:'焊接车间',check_date:'2026-08-12',expire_date:null}
+    {name:'干粉灭火器',facility_type:'EXTINGUISHER',location:'冲压车间东门',last_check_date:'2026-08-10',next_check_date:'2027-08-10',status:'NORMAL'},
+    {name:'室内消火栓',facility_type:'HYDRANT',location:'焊接车间',last_check_date:'2026-08-12',next_check_date:null,status:'NORMAL'}
   ],
   fire_patrols: [
-    {area:'冲压车间',patrol_date:'2026-08-16',inspector:'王海',result:'正常',issue_desc:''},
-    {area:'焊接车间',patrol_date:'2026-08-16',inspector:'李强',result:'异常',issue_desc:'气瓶存放区堆放杂物'}
+    {area:'冲压车间',patrol_type:'DAILY',patroller:'王海',patrol_date:'2026-08-16',result:'PASS',remark:''},
+    {area:'焊接车间',patrol_type:'DAILY',patroller:'李强',patrol_date:'2026-08-16',result:'ABNORMAL',remark:'气瓶存放区堆放杂物'}
   ],
   emergency_plans: [
-    {name:'火灾事故应急预案',plan_type:'综合',version:'V3.0',issue_date:'2026-05-01',review_date:'2026-08-01',status:'PUBLISHED'},
-    {name:'危化品泄漏专项预案',plan_type:'专项',version:'V2.0',issue_date:'2026-03-15',review_date:'2026-08-15',status:'DRAFT'}
+    {name:'火灾事故应急预案',version:'V3.0',scenario:'厂区火灾事故',publish_date:'2026-05-01',status:'PUBLISHED'},
+    {name:'危化品泄漏专项预案',version:'V2.0',scenario:'危化品泄漏',publish_date:'2026-03-15',status:'DRAFT'}
   ],
   emergency_drills: [
-    {drill_type:'消防疏散演练',drill_date:'2026-08-10',organizer:'张伟',result:'合格',issue:'',status:'PLANNED'},
-    {drill_type:'危化品泄漏演练',drill_date:'2026-07-15',organizer:'陈刚',result:'需改进',issue:'响应速度待提升',status:'COMPLETED'}
+    {name:'消防疏散演练',plan_name:'火灾事故应急预案',drill_date:'2026-08-10',organizer:'张伟',participants:120,evaluation:'演练流程顺畅，达到预期',status:'PLANNED'},
+    {name:'危化品泄漏演练',plan_name:'危化品泄漏专项预案',drill_date:'2026-07-15',organizer:'陈刚',participants:45,evaluation:'响应速度待提升',status:'COMPLETED'}
   ],
   emergency_supplies: [
-    {name:'正压式空气呼吸器',supply_type:'呼吸防护',quantity:4,unit:'套',location:'应急物资库',expire_date:'2027-06-30'},
-    {name:'急救箱',supply_type:'医疗急救',quantity:6,unit:'个',location:'各车间',expire_date:null}
+    {name:'正压式空气呼吸器',category:'呼吸防护',qty:4,location:'应急物资库',expire_date:'2027-06-30',status:'NORMAL'},
+    {name:'急救箱',category:'医疗急救',qty:6,location:'各车间',expire_date:null,status:'NORMAL'}
   ],
   emergency_responses: [
     {incident:'焊接飞溅引燃油污',start_time:'2026-08-14 10:05',level:'GENERAL',commander:'李强',summary:'现场扑灭，未造成伤亡',status:'CLOSED'}
