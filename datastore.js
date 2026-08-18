@@ -44,11 +44,11 @@ var SCHEMA = {
   bbs_observations:   { cols:['code','observer','observe_date','location','category','behavior_desc','is_safe','feedback','status'], req:['observer'], prefix:'BBS' },
   health_checks:      { cols:['code','employee','check_type','check_date','result','hospital','next_date','status'], req:['employee'], prefix:'HC' },
   performance:        { cols:['code','dept','period','kpi_name','target','actual','score','status'], req:['kpi_name'], prefix:'PERF' },
-  contractors:        { cols:['code','name','contact','qual_cert','valid_until','safety_score','status'], req:['name'], prefix:'CT' },
+  contractors:        { cols:['code','name','license_no','contract_end','insurance_end','violations','accidents','evaluation_score','is_blacklist','status'], req:['name'], prefix:'CT' },
   maintenances:       { cols:['code','equipment','fault_desc','applicant','plan_date','result','status'], req:['equipment'], prefix:'MT' },
   safety_facilities:  { cols:['code','name','facility_type','location','check_date','status'], req:['name'], prefix:'SF' },
   equipment_lifecycle:{ cols:['code','equipment','event_type','event_date','reason','operator'], req:['equipment'], prefix:'EL' },
-  chemicals:          { cols:['code','name','cas_no','hazard_class','msds','storage','stock','status'], req:['name'], prefix:'CH' },
+  chemicals:          { cols:['code','name','cas_no','ghs_class','storage_group','incompatible_groups','msds_url','qty','unit','location','status'], req:['name','msds_url'], prefix:'CH' },
   fire_facilities:    { cols:['code','name','facility_type','location','check_date','expire_date','status'], req:['name'], prefix:'FF' },
   fire_patrols:       { cols:['code','patrol_date','area','inspector','result','issue_desc','status'], req:['area'], prefix:'FP' },
   fire_drills:        { cols:['code','drill_date','drill_type','organizer','participants','result','status'], req:['drill_type'], prefix:'FD' },
@@ -447,6 +447,48 @@ async function route(method, path, body){
     return { closed:true, ticket:tk };
   }
 
+  /* ---- W2 承包商：入厂校验 ---- */
+  var admitMatch = path.match(/^\/api\/contractors\/(\d+)\/admit$/);
+  if(admitMatch && method === 'POST'){
+    var ctid = Number(admitMatch[1]);
+    var ct = await getById('contractors', ctid);
+    if(!ct) throw httpErr('NOT_FOUND');
+    if(ct.is_blacklist === 1) throw httpErr('BLACKLISTED', {reason:'该单位已列入黑名单'});
+    var tday = localDate();
+    if(ct.contract_end && ct.contract_end < tday) throw httpErr('CONTRACT_EXPIRED', {reason:'合同已到期'});
+    if(ct.insurance_end && ct.insurance_end < tday) throw httpErr('INSURANCE_EXPIRED', {reason:'保险已到期'});
+    if(!ct.status || ct.status !== 'ACTIVE'){ ct.status = 'ACTIVE'; await putRow('contractors', ct); }
+    await auditLog(__currentUser.name, 'ADMIT', 'contractors:'+ctid, 'passed');
+    return { admitted: 3, status:'ACTIVE' };
+  }
+
+  /* ---- W2 承包商：表现评估 ---- */
+  var evalMatch = path.match(/^\/api\/contractors\/(\d+)\/evaluate$/);
+  if(evalMatch && method === 'POST'){
+    var ctid2 = Number(evalMatch[1]);
+    var ct2 = await getById('contractors', ctid2);
+    if(!ct2) throw httpErr('NOT_FOUND');
+    var score = 5 - (Number(ct2.violations)||0)*0.5 - (Number(ct2.accidents)||0)*2;
+    score = Math.max(0, Math.min(5, Math.round(score*10)/10));
+    ct2.evaluation_score = score;
+    await putRow('contractors', ct2);
+    await auditLog(__currentUser.name, 'EVALUATE', 'contractors:'+ctid2, String(score));
+    return { score: score };
+  }
+
+  /* ---- W2 承包商：黑名单 ---- */
+  var blackMatch = path.match(/^\/api\/contractors\/(\d+)\/blacklist$/);
+  if(blackMatch && method === 'POST'){
+    var ctid3 = Number(blackMatch[1]);
+    var ct3 = await getById('contractors', ctid3);
+    if(!ct3) throw httpErr('NOT_FOUND');
+    ct3.is_blacklist = 1;
+    ct3.status = 'TERMINATED';
+    await putRow('contractors', ct3);
+    await auditLog(__currentUser.name, 'BLACKLIST', 'contractors:'+ctid3, body.reason||'');
+    return { blacklisted: true };
+  }
+
   /* ---- R4 应急响应一键启动 ---- */
   if(path === '/api/emergency/activate' && method === 'POST'){
     var erScenario = body.incident || body.scenario || '';
@@ -841,8 +883,8 @@ var SEED = {
     {kpi_name:'特种作业持证率',dept:'全厂',period:'2026-08',target:100,actual:100,score:100}
   ],
   contractors: [
-    {name:'苏州建安工程有限公司',contact:'刘工',qual_cert:'建筑业资质证书',valid_until:'2027-06-30',safety_score:85},
-    {name:'华信机电维保公司',contact:'陈工',qual_cert:'机电安装资质',valid_until:'2026-12-31',safety_score:90}
+    {name:'苏州建安工程有限公司',license_no:'D332012345',contract_end:'2027-06-30',insurance_end:'2027-06-30',violations:2,accidents:0,evaluation_score:4.0,is_blacklist:0,status:'ACTIVE'},
+    {name:'华信机电维保公司',license_no:'D332054321',contract_end:'2026-12-31',insurance_end:'2026-12-31',violations:0,accidents:0,evaluation_score:5,is_blacklist:0,status:'ACTIVE'}
   ],
   maintenances: [
     {equipment:'卷板机',fault_desc:'防护罩松动',applicant:'李强',plan_date:'2026-08-18',result:''},
@@ -857,8 +899,8 @@ var SEED = {
     {equipment:'数控折弯机',event_type:'启用',event_date:'2026-08-01',reason:'新设备投产',operator:'王海'}
   ],
   chemicals: [
-    {name:'工业酒精',cas_no:'64-17-5',hazard_class:'易燃液体',storage:'化学品库A区',stock:'50kg'},
-    {name:'液碱',cas_no:'1310-73-2',hazard_class:'腐蚀品',storage:'化学品库B区',stock:'100kg'}
+    {name:'工业酒精',cas_no:'64-17-5',ghs_class:'易燃液体',storage_group:'FLAMMABLE',incompatible_groups:'OXIDIZER',msds_url:'/msds/ethanol.pdf',qty:50,unit:'kg',location:'化学品库A区'},
+    {name:'液碱',cas_no:'1310-73-2',ghs_class:'腐蚀品',storage_group:'CORROSIVE',incompatible_groups:'FLAMMABLE',msds_url:'/msds/naoh.pdf',qty:100,unit:'kg',location:'化学品库B区'}
   ],
   fire_facilities: [
     {name:'干粉灭火器',facility_type:'灭火器',location:'冲压车间东门',check_date:'2026-08-10',expire_date:'2027-08-10'},
