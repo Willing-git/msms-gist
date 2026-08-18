@@ -117,6 +117,25 @@ function httpErr(error, extra){
   return e;
 }
 
+/* ---------- RBAC 权限矩阵 ---------- */
+var ROLE_PERMS = {
+  ADMIN:          { WRITE:true, DELETE:true, APPROVE:true },
+  SAFETY_OFFICER: { WRITE:true, DELETE:true, APPROVE:true },
+  WORKSHOP_MGR:   { WRITE:true, DELETE:false, APPROVE:false },
+  EMPLOYEE:       { WRITE:false, DELETE:false, APPROVE:false }
+};
+function requireRole(perm){
+  var u = __currentUser;
+  if(!u) return;
+  var role = u.role || 'EMPLOYEE';
+  var perms = ROLE_PERMS[role];
+  if(!perms || !perms[perm]){
+    var e2 = new Error('PERMISSION_DENIED');
+    e2.message = '权限不足：当前角色 '+role+' 无 '+perm+' 权限';
+    throw e2;
+  }
+}
+
 /* ---------- IndexedDB 封装 ---------- */
 var __db = null;
 function openDB(){
@@ -226,7 +245,7 @@ async function auditLog(actor, action, target, detail){
 
 /* ---------- 手动定时任务 ---------- */
 async function runJobs(){
-  var summary = { check_tasks_generated:0, hazard_overdue:0, cert_reminders:0, facility_expiring:0, facility_expired:0, emission_alerts:0 };
+  var summary = { check_tasks_generated:0, hazard_overdue:0, cert_reminders:0, facility_expiring:0, facility_expired:0, seq_due:0, seq_expired:0, supply_expiring:0, supply_expired:0, emission_alerts:0 };
   var today = localDate();
   var plans = await listAll('check_plan');
   for(var i=0;i<plans.length;i++){
@@ -280,6 +299,45 @@ async function runJobs(){
     if(em.result === '超标' && em.status !== 'ALERTED'){
       em.status = 'ALERTED'; await putRow('emission_monitors', em); summary.emission_alerts++;
       await notifySend({ title:'排污超标告警', content:'污染物 '+em.pollutant+' 超标（实测 '+em.actual_value+'，标准 '+em.standard_value+'）', to_user:'' });
+    }
+  }
+  var fireFacs = await listAll('fire_facilities');
+  for(var i=0;i<fireFacs.length;i++){
+    var ff = fireFacs[i];
+    if(!ff.next_check_date) continue;
+    var ffd = Math.ceil((new Date(ff.next_check_date) - new Date())/86400000);
+    if(ffd < 0 && ff.status !== 'EXPIRED'){
+      ff.status = 'EXPIRED'; await putRow('fire_facilities', ff); summary.facility_expired++;
+      await notifySend({ title:'消防设施检测到期', content:'设施 '+ff.name+' 检测已到期，请复检', to_user:'' });
+    } else if(ffd >= 0 && [30,15,7,1].indexOf(ffd) >= 0){
+      await notifySend({ title:'消防设施检测临期', content:'设施 '+ff.name+' 检测将于 '+ffd+' 天后到期', to_user:'' });
+      summary.facility_expiring++;
+    }
+  }
+  var seqs = await listAll('special_equipment');
+  for(var j=0;j<seqs.length;j++){
+    var sq = seqs[j];
+    if(!sq.next_check_date) continue;
+    var sqd = Math.ceil((new Date(sq.next_check_date) - new Date())/86400000);
+    if(sqd < 0 && sq.status !== 'EXPIRED'){
+      sq.status = 'EXPIRED'; await putRow('special_equipment', sq); summary.seq_expired++;
+      await notifySend({ title:'特种设备检验过期', content:'设备 '+sq.name+' 法定检验已过期', to_user:'' });
+    } else if(sqd >= 0 && sqd <= 30 && sq.status !== 'DUE'){
+      sq.status = 'DUE'; await putRow('special_equipment', sq); summary.seq_due++;
+      await notifySend({ title:'特种设备临检提醒', content:'设备 '+sq.name+' 检验将于 '+sqd+' 天后到期', to_user:'' });
+    }
+  }
+  var supplies = await listAll('emergency_supplies');
+  for(var k=0;k<supplies.length;k++){
+    var sp = supplies[k];
+    if(!sp.expire_date) continue;
+    var spd = Math.ceil((new Date(sp.expire_date) - new Date())/86400000);
+    if(spd < 0 && sp.status !== 'EXPIRED'){
+      sp.status = 'EXPIRED'; await putRow('emergency_supplies', sp); summary.supply_expired++;
+      await notifySend({ title:'应急物资已过期', content:'物资 '+sp.name+' 已过期', to_user:'' });
+    } else if(spd >= 0 && spd <= 30 && sp.status !== 'EXPIRING'){
+      sp.status = 'EXPIRING'; await putRow('emergency_supplies', sp); summary.supply_expiring++;
+      await notifySend({ title:'应急物资临期', content:'物资 '+sp.name+' 将于 '+spd+' 天后过期', to_user:'' });
     }
   }
   return summary;
@@ -592,8 +650,19 @@ async function route(method, path, body){
     }
     if(method === 'POST' && seg.length === 1){
       if(SCHEMA[t].readonly) throw httpErr('READONLY');
+      requireRole('WRITE');
       var row = pickFields(t, body);
       validate(t, row);
+      if(t === 'chemicals' && row.storage_group && row.location){
+        var allChem = await listAll('chemicals');
+        var conf = allChem.find(function(old){
+          if(!old.location || old.location !== row.location || !old.storage_group) return false;
+          var myInc = (row.incompatible_groups || '').split(',').map(function(s){return s.trim();});
+          var oldInc = (old.incompatible_groups || '').split(',').map(function(s){return s.trim();});
+          return myInc.indexOf(old.storage_group) >= 0 || oldInc.indexOf(row.storage_group) >= 0;
+        });
+        if(conf) throw httpErr('STORAGE_CONFLICT', { conflict:conf.name, reason:'与 '+conf.name+' 储存不相容，禁止同区混存' });
+      }
       if(SCHEMA[t].cols.indexOf('code') >= 0 && !row.code){
         row.code = SEQ_PREFIXES.indexOf(SCHEMA[t].prefix) >= 0 ? await codeGen(SCHEMA[t].prefix) : (SCHEMA[t].prefix + Date.now());
       }
@@ -615,6 +684,7 @@ async function route(method, path, body){
       return createdRow2;
     }
     if(method === 'PATCH' && seg.length === 2){
+      requireRole('WRITE');
       var row2 = pickFields(t, body);
       if(Object.keys(row2).length === 0) throw httpErr('EMPTY_PATCH');
       if(row2.status && STATE_NEXT[t]){
