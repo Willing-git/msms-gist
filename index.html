@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>制造业安全管理工作台 · 63模块全景</title>
+<style>
+  :root {
+    --brand-50:#EAF0FF; --brand-100:#D4E1FF; --brand-200:#A8C4FF; --brand-300:#7AA3F7;
+    --brand-400:#4D80EE; --brand-500:#2B5CE6; --brand-600:#1E4FC4; --brand-700:#173FA3;
+    --cyan-400:#00B8D9; --cyan-500:#00A0BE; --cyan-600:#00859E;
+    --success-500:#00B578; --warning-500:#FF8800; --danger-500:#F53F3F;
+    --risk-major:#F53F3F; --risk-high:#FF7D00; --risk-mid:#F7BA1E; --risk-low:#1677FF;
+    --gray-0:#FFFFFF; --gray-1:#F7F8FA; --gray-2:#F2F3F5; --gray-3:#E5E6EB;
+    --gray-4:#C9CDD4; --gray-5:#86909C; --gray-6:#4E5969; --gray-7:#1D2129;
+    --text-1:#1D2129; --text-2:#4E5969; --text-3:#86909C;
+    --bg-page:var(--gray-2); --bg-card:var(--gray-0); --bg-sub:var(--gray-1);
+    --border-1:#E5E6EB; --border-2:#C9CDD4;
+    --font-family:"HarmonyOS Sans SC","MiSans","PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
+    --font-numeric:"DIN Alternate","Roboto","HarmonyOS Sans SC",monospace;
+    --space-2:8px; --space-3:12px; --space-4:16px; --space-5:20px; --space-6:24px; --space-7:32px;
+    --radius-6:6px; --radius-8:8px; --radius-12:12px; --radius-full:999px;
+    --shadow-1:0 1px 2px rgba(29,33,41,.06); --shadow-2:0 4px 12px rgba(29,33,41,.10);
+    --dur-base:200ms; --ease:cubic-bezier(.2,0,0,1);
+  }
+  :root[data-theme="dark"] {
+    --bg-page:#0E1013; --bg-card:#17191E; --bg-sub:#1F2228;
+    --text-1:#F2F3F5; --text-2:#C9CDD4; --text-3:#86909C;
+    --border-1:#2E3138; --border-2:#41454D;
+    --brand-500:#3D7BFF; --brand-600:#5B90FF; --cyan-400:#33D6EA;
+    --risk-major:#F76560; --risk-high:#FF9A2E; --risk-mid:#FBDC6D; --risk-low:#3D9BFF;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html,body { height:100%; }
+  body { font-family:var(--font-family); color:var(--text-1); background:var(--bg-page); line-height:1.6; overflow:hidden; transition:background var(--dur-base) var(--ease),color var(--dur-base) var(--ease); }
+  button { font-family:inherit; cursor:pointer; }
+  input,select,textarea { font-family:inherit; font-size:13px; }
+  a { color:var(--brand-500); text-decoration:none; }
+
+  .app { display:flex; height:100vh; }
+
+  /* 侧边栏 */
+  .sidebar { width:248px; min-width:248px; background:var(--bg-card); border-right:1px solid var(--border-1); display:flex; flex-direction:column; overflow:hidden; }
+  .sb-brand { height:56px; display:flex; align-items:center; gap:10px; padding:0 16px; border-bottom:1px solid var(--border-1); font-weight:600; font-size:14px; }
+  .sb-brand .mark { width:28px; height:28px; border-radius:8px; background:linear-gradient(135deg,var(--brand-500),var(--cyan-400)); display:grid; place-items:center; color:#fff; font-weight:700; font-size:13px; }
+  .sb-nav { flex:1; overflow-y:auto; padding:8px; }
+  .cat { margin-bottom:2px; }
+  .cat-head { width:100%; display:flex; align-items:center; justify-content:space-between; padding:8px 10px; border:none; background:transparent; color:var(--text-2); font-size:13px; font-weight:600; border-radius:8px; text-align:left; }
+  .cat-head:hover { background:var(--bg-sub); }
+  .cat-head .cnt { font-size:11px; color:var(--text-3); font-weight:400; }
+  .mod-list { display:none; padding-left:6px; }
+  .cat.open .mod-list { display:block; }
+  .mod-item { width:100%; display:flex; align-items:center; gap:7px; padding:6px 10px; border:none; background:transparent; color:var(--text-2); font-size:13px; border-radius:8px; text-align:left; }
+  .mod-item:hover { background:var(--bg-sub); }
+  .mod-item.active { background:var(--brand-50); color:var(--brand-600); font-weight:500; }
+  .mod-item .code { font-family:var(--font-numeric); font-size:11px; color:var(--text-3); width:24px; flex:none; }
+  .prio-dot { width:6px; height:6px; border-radius:50%; flex:none; }
+  .prio-dot.p0 { background:var(--brand-500); }
+  .prio-dot.p1 { background:var(--warning-500); }
+  .prio-dot.p2 { background:var(--gray-4); }
+
+  /* 顶部栏 */
+  .topbar { height:56px; flex:none; display:flex; align-items:center; gap:16px; padding:0 20px; background:var(--bg-card); border-bottom:1px solid var(--border-1); }
+  .crumb { font-size:13px; color:var(--text-2); }
+  .crumb b { color:var(--text-1); }
+  .topbar .spacer { flex:1; }
+  .db-badge { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-3); }
+  .db-badge .dot { width:7px; height:7px; border-radius:50%; background:var(--gray-4); }
+  .db-badge.ok .dot { background:var(--success-500); }
+  .db-badge.err .dot { background:var(--danger-500); }
+  .theme-btn { border:1px solid var(--border-1); background:var(--bg-card); color:var(--text-2); width:32px; height:32px; border-radius:999px; display:grid; place-items:center; font-size:13px; }
+  .stat-note { font-size:12px; color:var(--text-3); }
+
+  /* 内容区 */
+  .content { flex:1; overflow-y:auto; padding:24px 28px; }
+
+  .page-head { display:flex; align-items:center; gap:12px; margin-bottom:6px; }
+  .page-head h1 { font-size:20px; font-weight:700; }
+  .prio { padding:2px 9px; border-radius:999px; font-size:12px; font-weight:600; }
+  .prio.p0 { background:color-mix(in srgb,var(--brand-500) 12%,transparent); color:var(--brand-500); }
+  .prio.p1 { background:color-mix(in srgb,var(--warning-500) 14%,transparent); color:#B65C00; }
+  .prio.p2 { background:var(--bg-sub); color:var(--text-3); }
+  .desc { font-size:13px; color:var(--text-2); margin-bottom:20px; max-width:900px; }
+
+  .grid { display:grid; gap:16px; }
+  .stats { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:16px; }
+  .stat-card { background:var(--bg-card); border:1px solid var(--border-1); border-radius:12px; padding:14px 16px; box-shadow:var(--shadow-1); }
+  .stat-card .k { font-size:12px; color:var(--text-3); }
+  .stat-card .v { font-family:var(--font-numeric); font-size:26px; font-weight:700; color:var(--brand-500); line-height:1.2; }
+
+  .split { display:grid; grid-template-columns:340px 1fr; gap:16px; align-items:start; }
+  .split.full { grid-template-columns:1fr; }
+  .card { background:var(--bg-card); border:1px solid var(--border-1); border-radius:12px; padding:18px; box-shadow:var(--shadow-1); }
+  .card h3 { font-size:14px; font-weight:600; margin-bottom:14px; }
+
+  .form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
+  .form-row.one { grid-template-columns:1fr; }
+  .field { display:flex; flex-direction:column; gap:4px; }
+  .field label { font-size:12px; color:var(--text-3); }
+  .field input,.field select,.field textarea { min-height:36px; padding:0 12px; border:1px solid var(--border-2); border-radius:6px; background:var(--bg-card); color:var(--text-1); }
+  .field textarea { padding:8px 12px; min-height:64px; resize:vertical; }
+  .field input:focus,.field select:focus,.field textarea:focus { outline:none; border-color:var(--brand-500); }
+
+  .btn { height:36px; padding:0 16px; border-radius:6px; border:none; font-size:13px; font-weight:500; color:#fff; background:var(--brand-500); }
+  .btn:hover { background:var(--brand-600); }
+  .btn.ghost { background:var(--bg-sub); color:var(--text-2); border:1px solid var(--border-1); }
+  .btn.mini { height:26px; padding:0 11px; font-size:12px; border-radius:999px; }
+
+  .table-wrap { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th,td { text-align:left; padding:9px 11px; border-bottom:1px solid var(--border-1); white-space:nowrap; }
+  th { color:var(--text-3); font-size:12px; font-weight:500; position:sticky; top:0; background:var(--bg-card); }
+  tbody tr:hover { background:var(--bg-sub); }
+  .code { font-family:var(--font-numeric); color:var(--brand-500); font-size:12px; }
+
+  .pill { display:inline-block; padding:2px 9px; border-radius:999px; font-size:12px; line-height:18px; }
+  .pill.gray { background:var(--bg-sub); color:var(--text-2); }
+  .pill.brand { background:color-mix(in srgb,var(--brand-500) 12%,transparent); color:var(--brand-500); }
+  .pill.ok { background:color-mix(in srgb,var(--success-500) 14%,transparent); color:var(--success-500); }
+  .pill.warn { background:color-mix(in srgb,var(--warning-500) 14%,transparent); color:#B65C00; }
+  .pill.danger { background:color-mix(in srgb,var(--danger-500) 12%,transparent); color:var(--danger-500); }
+  .pill.mid { background:color-mix(in srgb,var(--risk-mid) 16%,transparent); color:#B38600; }
+  .pill.low { background:color-mix(in srgb,var(--risk-low) 12%,transparent); color:var(--risk-low); }
+
+  .empty { padding:28px; text-align:center; color:var(--text-3); font-size:13px; }
+  .msg { margin-top:10px; font-size:12px; color:var(--text-3); }
+  .msg.err { color:var(--danger-500); }
+
+  .ov-card { background:var(--bg-card); border:1px solid var(--border-1); border-radius:12px; padding:22px; box-shadow:var(--shadow-1); margin-bottom:16px; }
+  .ov-card h3 { font-size:14px; font-weight:600; margin-bottom:6px; }
+  .ov-card .sub { font-size:12px; color:var(--text-3); margin-bottom:10px; }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+  .chip { padding:4px 11px; border-radius:999px; background:var(--bg-sub); font-size:12px; color:var(--text-2); }
+  .note { margin-top:14px; font-size:12px; color:var(--text-3); border-top:1px dashed var(--border-2); padding-top:12px; }
+
+  .matrix { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+  .mc { border-radius:12px; padding:14px; color:#fff; }
+  .mc .n { font-size:13px; font-weight:600; }
+  .mc .v { font-family:var(--font-numeric); font-size:24px; font-weight:700; }
+
+  @media (max-width:1020px){ .sidebar{width:210px;min-width:210px;} .stats{grid-template-columns:repeat(3,1fr);} .split{grid-template-columns:1fr;} .matrix{grid-template-columns:1fr 1fr;} }
+
+  /* ===== 移动端自适应（抽屉导航 + 触控优化） ===== */
+  .nav-toggle { display:none; width:34px; height:34px; border:1px solid var(--border-1); border-radius:8px; background:var(--bg-card); color:var(--text-1); font-size:16px; place-items:center; flex:none; }
+  .backdrop { display:none; position:fixed; inset:0; background:rgba(0,0,0,.42); z-index:99; }
+  @media (max-width:900px){
+    .nav-toggle { display:grid; }
+    .sidebar { position:fixed; top:0; left:0; bottom:0; z-index:100; width:264px; min-width:264px; transform:translateX(-100%); transition:transform .25s var(--ease); box-shadow:var(--shadow-2); }
+    .sidebar.open { transform:none; }
+    body.nav-open .backdrop { display:block; }
+    .stat-note { display:none; }
+    .content { padding:14px 12px 28px; }
+    .page-head h1 { font-size:17px; }
+    .stats { grid-template-columns:1fr 1fr; gap:10px; }
+    .stat-card { padding:12px 14px; }
+    .stat-card .v { font-size:22px; }
+    .card { padding:14px; }
+    th, td { padding:8px 9px; font-size:12px; }
+    .btn { min-height:36px; }
+    .btn.mini { min-height:30px; }
+    .field input,.field select,.field textarea { min-height:40px; font-size:15px; } /* 防 iOS 聚焦缩放 */
+    .crumb { max-width:32vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    #loginSel { max-width:150px; }
+  }
+  @media (max-width:560px){
+    .matrix { grid-template-columns:1fr; }
+    .form-row { grid-template-columns:1fr; }
+    .topbar { gap:8px; padding:0 12px; }
+    #loginSel { max-width:118px; font-size:11px; }
+    .theme-btn { width:30px; height:30px; }
+    .btn.mini.ghost { display:none; } /* 小屏隐藏次要按钮，功能保留在模块内 */
+  }
+</style>
+</head>
+<body>
+<div class="backdrop" id="backdrop"></div>
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-brand"><span class="mark">M</span> 制造业安全工作台</div>
+    <nav class="sb-nav" id="sbNav"></nav>
+  </aside>
+  <div style="display:flex;flex-direction:column;flex:1;min-width:0;">
+    <header class="topbar">
+      <button class="nav-toggle" id="navToggle" title="菜单">☰</button>
+      <div class="crumb" id="crumb">制造业安全管理系统 / <b>全景</b></div>
+      <div class="spacer"></div>
+      <select id="loginSel" title="演示登录" onchange="loginAs(this.value)" style="height:32px;padding:0 8px;border:1px solid var(--border-1);border-radius:6px;background:var(--bg-card);color:var(--text-1);font-size:12px">
+        <option value="admin">魏先生 · ADMIN</option>
+        <option value="safety">张伟 · 安全员</option>
+        <option value="workshop">王海 · 车间管理员</option>
+        <option value="employee">李强 · 员工</option>
+      </select>
+      <button class="btn mini ghost" onclick="runJobs()" title="手动运行定时任务">运行定时任务</button>
+      <button class="btn mini ghost" onclick="backupToGist()" title="备份数据到 GitHub Gist">备份到云端</button>
+      <button class="btn mini ghost" onclick="restoreFromGist()" title="从 GitHub Gist 恢复数据">从云端恢复</button>
+      <span class="stat-note" id="roleBadge"></span>
+      <span class="db-badge" id="dbBadge"><span class="dot"></span><span id="dbText">本地库</span></span>
+      <button class="theme-btn" id="themeBtn" title="明暗切换">◐</button>
+    </header>
+    <main class="content" id="content"></main>
+  </div>
+</div>
+
+<script src="datastore.js"></script>
+<script>
+(function(){
+  var btn=document.getElementById('themeBtn'), root=document.documentElement, saved=null;
+  try{saved=localStorage.getItem('msms63-theme');}catch(e){}
+  if(saved) root.setAttribute('data-theme', saved);
+  btn.addEventListener('click',function(){var c=root.getAttribute('data-theme')==='dark'?'light':'dark';root.setAttribute('data-theme',c);try{localStorage.setItem('msms63-theme',c);}catch(e){}});
+})();
+
+/* ===== 工具函数 ===== */
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function pill(text,cls){return '<span class="pill '+cls+'">'+esc(text)+'</span>';}
+function pillCls(v){
+  v=String(v||'');
+  if(/CLOSED|FINISHED|VERIFIED|DONE|PASS|VALID|ACTIVE|SUCCESS|IN_USE|PUBLISHED|READ/.test(v)) return 'ok';
+  if(/MAJOR|CRITICAL|EXPIRED|FAIL|EXCEPTION|DUE|FROZEN|LOCKED|FAILED|REJECTED|SCRAPPED/.test(v)) return 'danger';
+  if(/HIGH|ORANGE|FIXING|ONGOING|IN_PROGRESS|DOING|SUBMITTED|INVESTIGATING|EXPIRING|MAINTENANCE|STARTED/.test(v)) return 'warn';
+  if(/MID|YELLOW/.test(v)) return 'mid';
+  if(/LOW|BLUE/.test(v)) return 'low';
+  return 'gray';
+}
+function lbl(map,v){ return L[map]&&L[map][v]!=null ? L[map][v] : (v==null||v===''?'-':v); }
+
+var __token=null; try{__token=localStorage.getItem('msms-token');}catch(e){}
+async function api(method,path,body){
+  return await route(method,path,body);
+}
+function setDb(ok,txt){var b=document.getElementById('dbBadge');b.className='db-badge '+(ok?'ok':'err');document.getElementById('dbText').textContent=txt;}
+async function loginAs(u){
+  try{ var d=await api('POST','/api/auth/login',{username:u}); if(d&&d.token){__token=d.token;try{localStorage.setItem('msms-token',__token);}catch(e){}} document.getElementById('roleBadge').textContent='当前：'+d.user.name+' · '+d.user.role; }
+  catch(e){ document.getElementById('roleBadge').textContent='登录失败'; }
+}
+async function runJobs(){
+  try{ var s=await api('POST','/api/jobs/run'); alert('已运行：生成检查任务 '+s.check_tasks_generated+'，隐患逾期 '+s.hazard_overdue+'，证书提醒 '+s.cert_reminders); }
+  catch(e){ alert('运行失败：'+esc(e.message)); }
+}
+
+/* ===== 标签字典 ===== */
+var L={
+  hzStatus:{REPORTED:'待核实',VERIFIED:'待派单',ASSIGNED:'已派单',FIXING:'整改中',SUBMITTED:'待验收',CLOSED:'已销项',REJECTED:'已驳回'},
+  riskLevel:{MAJOR:'重大',HIGH:'较大',MID:'一般',LOW:'低'},
+  hzLevel:{GENERAL:'一般',MAJOR:'重大'},
+  hazardSource:{REPORT:'随手拍',INSPECTION:'点检',PATROL:'巡查',IOT:'IoT',AI:'AI识别',CHECK:'检查'},
+  permitType:{HOTWORK:'动火',CONFINED:'受限空间',HIGH:'高处',TEMP_POWER:'临时用电',ROAD_BLOCK:'断路',EXCAVATION:'动土',LIFTING:'吊装',BLIND_PLATE:'盲板抽堵',MAINTENANCE:'检修'},
+  permitLevel:{GENERAL:'一般',MAJOR:'较大',CRITICAL:'严重'},
+  permitStatus:{DRAFT:'草稿',SUBMITTED:'已提交',L1_APPROVED:'一级已审',L2_APPROVED:'二级已审',IN_PROGRESS:'作业中',FINISHED:'已完工',ARCHIVED:'已归档'},
+  ticketStatus:{OPEN:'待处理',DOING:'处理中',PENDING_VERIFY:'待验收',CLOSED:'已关闭',REJECTED:'已驳回'},
+  ticketType:{hazard_rectify:'隐患整改',equip_maintain:'设备维保',risk_review:'风险复评',permit_approve:'作业审批',training:'培训补考',capa:'纠正措施'},
+  unitType:{COMPANY:'公司',DEPT:'部门',WORKSHOP:'车间',TEAM:'班组',POST:'岗位'},
+  orgStatus:{ACTIVE:'启用',INACTIVE:'停用'},
+  userStatus:{ACTIVE:'在职',FROZEN:'冻结',LOCKED:'锁定',LEFT:'离职'},
+  scope:{SELF:'本人',TEAM:'班组',DEPT:'部门',WORKSHOP:'车间',ALL:'全公司'},
+  roleStatus:{ACTIVE:'启用',INACTIVE:'停用'},
+  dictScope:{DICT:'数据字典',CONFIG:'参数配置',INTEGRATION:'集成配置'},
+  channel:{INBOX:'站内信',DINGTALK:'钉钉',SMS:'短信'},
+  msgStatus:{SENT:'已发送',READ:'已读',FAILED:'失败'},
+  trainType:{STAFF:'三级安全教育',SPECIAL:'专项培训',REVIEW:'复训',EMERGENCY:'应急培训'},
+  trainStatus:{PLANNED:'计划中',ONGOING:'进行中',DONE:'已完成'},
+  examStatus:{DRAFT:'草稿',OPEN:'已开放',CLOSED:'已关闭'},
+  certType:{WELDER:'焊工证',FORKLIFT:'叉车证',ELECTRICIAN:'电工证',CRANE:'起重机司机',GAS:'煤气作业',SCAFFOLD:'高处作业'},
+  certStatus:{VALID:'有效',EXPIRING:'临期',EXPIRED:'已过期'},
+  eqStatus:{IN_USE:'在用',MAINTENANCE:'检修中',IDLE:'闲置',SCRAPPED:'已报废'},
+  eqCategory:{SPECIAL:'特种设备',COMMON:'普通设备'},
+  inspectResult:{PASS:'正常',FAIL:'异常',EXCEPTION:'待处理'},
+  seqStatus:{IN_USE:'在用',DUE:'临检',EXPIRED:'过期'},
+  seqKind:{CRANE:'起重机械',PRESSURE:'压力容器',BOILER:'锅炉',FORKLIFT:'场（厂）内机动车辆'},
+  incidentCat:{VEHICLE:'车辆伤害',FIRE:'火灾',MECH:'机械伤害',ELEC:'触电',FALL:'高处坠落',CHEM:'中毒窒息',OTHER:'其他'},
+  incidentLevel:{GENERAL:'一般',MAJOR:'较大',CRITICAL:'重大'},
+  incidentStatus:{REPORTED:'已报告',INVESTIGATING:'调查中',CLOSED:'已结案'},
+  invStatus:{ONGOING:'调查中',DONE:'已完成'},
+  invMethod:{'5WHY':'5Why',FTA:'故障树','4M':'4M法',HAZOP:'HAZOP'},
+  capaSource:{'事故':'事故','审核':'审核','演练':'演练','隐患':'隐患'},
+  capaStatus:{OPEN:'待处理',DOING:'执行中',DONE:'已完成',VERIFIED:'已验证'},
+  backupStatus:{SUCCESS:'成功',FAILED:'失败',RUNNING:'进行中'}
+};
+// 下一步状态：从后端 STATE_NEXT 单一真源推导（取 allowed 列表首个正向状态），不再维护前端副本
+function nextOf(table, status){
+  var map = STATE_NEXT[table];
+  if(!map) return null;
+  var allowed = map[status] || [];
+  return allowed.length ? allowed[0] : null;
+}
+
+/* ===== 模块配置 ===== */
+var CATS=[
+  {id:'plat',name:'① 平台基础'},
+  {id:'double',name:'② 双重预防机制'},
+  {id:'people',name:'③ 人员安全'},
+  {id:'work',name:'④ 作业安全'},
+  {id:'equip',name:'⑤ 设备设施'},
+  {id:'material',name:'⑥ 物料工艺'},
+  {id:'fire',name:'⑦ 消防管理'},
+  {id:'env',name:'⑧ 环保管理'},
+  {id:'emerg',name:'⑨ 应急管理'},
+  {id:'incident',name:'⑩ 事故事件'},
+  {id:'monitor',name:'⑪ 监测监控'},
+  {id:'data',name:'⑫ 数据智能'},
+  {id:'collab',name:'⑬ 协同办公'}
+];
+
+// 字段类型：text/date/number/datetime/select/textarea；select 用 opt 对象 {value:label}
+var MODULES=[
+  // ① 平台基础
+  {id:'P1',cat:'plat',name:'组织架构管理',prio:'P0',type:'crud',table:'org_units',titleKey:'name',desc:'公司/部门/车间/班组/岗位五级树；多工厂支持；钉钉通讯录同步映射。',form:[{k:'name',l:'名称',t:'text',req:1},{k:'unit_type',l:'类型',t:'select',opt:L.unitType},{k:'leader',l:'负责人',t:'text'},{k:'sort_order',l:'排序',t:'number'},{k:'status',l:'状态',t:'select',opt:L.orgStatus}],cols:[{k:'code',l:'编码'},{k:'name',l:'名称'},{k:'unit_type',l:'类型',map:'unitType'},{k:'leader',l:'负责人'},{k:'status',l:'状态',map:'orgStatus'}],stats:[{by:'unit_type',map:'unitType'}]},
+  {id:'P2',cat:'plat',name:'用户与账号',prio:'P0',type:'crud',table:'users',titleKey:'name',desc:'员工档案、账号状态、钉钉免登绑定，含登录锁定与离职冻结。',form:[{k:'name',l:'姓名',t:'text',req:1},{k:'emp_no',l:'工号',t:'text',req:1},{k:'dept',l:'部门',t:'text'},{k:'phone',l:'手机',t:'text'},{k:'role_code',l:'角色',t:'text'},{k:'status',l:'状态',t:'select',opt:L.userStatus}],cols:[{k:'emp_no',l:'工号'},{k:'name',l:'姓名'},{k:'dept',l:'部门'},{k:'role_code',l:'角色'},{k:'phone',l:'手机'},{k:'status',l:'状态',map:'userStatus'}],stats:[{by:'status',map:'userStatus'}]},
+  {id:'P3',cat:'plat',name:'角色权限 RBAC',prio:'P0',type:'crud',table:'roles',titleKey:'name',desc:'角色×权限点×数据范围三级模型，页面级+接口级双层校验。',form:[{k:'name',l:'角色名',t:'text',req:1},{k:'code',l:'编码',t:'text'},{k:'data_scope',l:'数据范围',t:'select',opt:L.scope},{k:'perms',l:'权限点',t:'textarea'},{k:'description',l:'说明',t:'text'}],cols:[{k:'code',l:'编码'},{k:'name',l:'角色名'},{k:'data_scope',l:'数据范围',map:'scope'},{k:'description',l:'说明'},{k:'status',l:'状态',map:'roleStatus'}],stats:[{by:'data_scope',map:'scope'}]},
+  {id:'P4',cat:'plat',name:'系统配置与字典',prio:'P0',type:'crud',table:'dicts',titleKey:'label',desc:'枚举字典、参数配置、风险阈值、通知模板；引用即禁删。',form:[{k:'scope',l:'作用域',t:'select',opt:L.dictScope},{k:'dict_type',l:'字典类型',t:'text'},{k:'code',l:'编码',t:'text',req:1},{k:'label',l:'名称',t:'text'},{k:'value',l:'值',t:'text'},{k:'enabled',l:'启用',t:'select',opt:{true:'是',false:'否'}}],cols:[{k:'scope',l:'作用域',map:'dictScope'},{k:'dict_type',l:'类型'},{k:'code',l:'编码'},{k:'label',l:'名称'},{k:'value',l:'值'},{k:'enabled',l:'启用'}],stats:[{by:'scope',map:'dictScope'}]},
+  {id:'P5',cat:'plat',name:'审计日志',prio:'P0',type:'readonly',table:'audit_logs',titleKey:'action',desc:'所有写操作留痕（who/when/from/to/ip），追加写保护，3 年保留。',cols:[{k:'created_at',l:'时间'},{k:'actor',l:'操作人'},{k:'action',l:'动作'},{k:'target',l:'对象'},{k:'ip',l:'IP'},{k:'detail',l:'详情'}]},
+  {id:'P6',cat:'plat',name:'消息中心',prio:'P0',type:'crud',table:'messages',titleKey:'title',desc:'站内信 + 钉钉工作通知 + 短信统一通道，频控与已读回执。',form:[{k:'title',l:'标题',t:'text',req:1},{k:'channel',l:'通道',t:'select',opt:L.channel},{k:'to_user',l:'接收人',t:'text'},{k:'content',l:'内容',t:'textarea'}],cols:[{k:'title',l:'标题'},{k:'channel',l:'通道',map:'channel'},{k:'to_user',l:'接收人'},{k:'status',l:'状态',map:'msgStatus'},{k:'created_at',l:'时间'}],stats:[{by:'channel',map:'channel'}]},
+  {id:'P7',cat:'plat',name:'文件存储',prio:'P0',type:'crud',table:'files',titleKey:'name',desc:'图片/音视频/文档统一上传下载，类型白名单 + sha256 + OSS 扩展。',form:[{k:'name',l:'文件名',t:'text',req:1},{k:'file_type',l:'类型',t:'text'},{k:'file_size',l:'大小(字节)',t:'number'},{k:'uploaded_by',l:'上传人',t:'text'},{k:'url',l:'URL',t:'text'}],cols:[{k:'name',l:'文件名'},{k:'file_type',l:'类型'},{k:'file_size',l:'大小'},{k:'uploaded_by',l:'上传人'},{k:'created_at',l:'时间'}],stats:[{by:'file_type',map:null}]},
+  {id:'P8',cat:'plat',name:'统一工单引擎',prio:'P0',type:'crud',table:'tickets',titleKey:'title',desc:'隐患整改/审批/维保/CAPA 等全部任务统一建模，状态机+催办+升级。',form:[{k:'title',l:'标题',t:'text',req:1},{k:'biz_type',l:'业务类型',t:'select',opt:L.ticketType},{k:'owner',l:'责任人',t:'text'},{k:'deadline',l:'截止',t:'date'}],cols:[{k:'code',l:'编码'},{k:'title',l:'标题'},{k:'biz_type',l:'类型',map:'ticketType'},{k:'owner',l:'责任人'},{k:'deadline',l:'截止'},{k:'status',l:'状态',map:'ticketStatus'}],status:{key:'status',map:'ticketStatus',flow:'ticketStatus'},stats:[{by:'status',map:'ticketStatus'}]},
+  {id:'P9',cat:'plat',name:'数据备份与恢复',prio:'P0',type:'crud',table:'backups',titleKey:'name',desc:'定时备份、加密存储、版本保留、恢复演练与 PIPL 数据销毁。',form:[{k:'name',l:'备份名称',t:'text',req:1},{k:'backup_size',l:'大小',t:'text'},{k:'status',l:'状态',t:'select',opt:L.backupStatus}],cols:[{k:'name',l:'名称'},{k:'backup_size',l:'大小'},{k:'status',l:'状态',map:'backupStatus'},{k:'created_at',l:'时间'}],stats:[{by:'status',map:'backupStatus'}]},
+
+  // ② 双重预防
+  {id:'D1',cat:'double',name:'风险分级管控',prio:'P0',type:'crud',table:'risk_units',titleKey:'name',desc:'危险源辨识→LEC 评估→四级分级→管控措施，业务主线之一。',form:[{k:'name',l:'风险单元',t:'text',req:1},{k:'dept',l:'部门',t:'text'},{k:'owner',l:'责任人',t:'text'},{k:'l',l:'L 可能性',t:'number'},{k:'e',l:'E 暴露',t:'number'},{k:'c',l:'C 后果',t:'number'},{k:'measure',l:'管控措施',t:'textarea'}],cols:[{k:'code',l:'编码'},{k:'name',l:'风险单元'},{k:'l',l:'L'},{k:'e',l:'E'},{k:'c',l:'C'},{k:'level',l:'等级',map:'riskLevel'},{k:'dept',l:'部门'},{k:'owner',l:'责任人'},{k:'measure',l:'管控措施'}],stats:[{by:'level',map:'riskLevel'}]},
+  {id:'D2',cat:'double',name:'隐患排查治理',prio:'P0',type:'crud',table:'hazards',titleKey:'title',desc:'排查→上报→派单→整改→复查→销项全闭环，随手拍 3 步上报。',form:[{k:'title',l:'隐患描述',t:'text',req:1},{k:'category',l:'类别',t:'text'},{k:'level',l:'等级',t:'select',opt:L.hzLevel},{k:'dept',l:'部门',t:'text'},{k:'location',l:'位置',t:'text'},{k:'assignee',l:'责任人',t:'text'},{k:'rectify_deadline',l:'整改期限',t:'date'}],cols:[{k:'code',l:'编码'},{k:'title',l:'描述'},{k:'level',l:'等级',map:'hzLevel'},{k:'dept',l:'部门'},{k:'assignee',l:'责任人'},{k:'source',l:'来源',map:'hazardSource'},{k:'overdue_flag',l:'逾期'},{k:'status',l:'状态',map:'hzStatus'}],status:{key:'status',map:'hzStatus',flow:'hzStatus'},stats:[{by:'level',map:'hzLevel'},{by:'status',map:'hzStatus'}]},
+  {id:'D3',cat:'double',name:'风险告知与公示',prio:'P1',type:'crud',table:'risk_notices',titleKey:'name',desc:'岗位风险告知卡、四色分布图、风险公告栏（线上+打印）。',form:[{k:'name',l:'告知卡名称',t:'text',req:1},{k:'risk_unit',l:'关联风险单元',t:'text'},{k:'dept',l:'部门',t:'text'},{k:'publish_date',l:'发布日期',t:'date'},{k:'content',l:'告知内容',t:'textarea'}],cols:[{k:'code',l:'编码'},{k:'name',l:'名称'},{k:'risk_unit',l:'关联风险'},{k:'dept',l:'部门'},{k:'publish_date',l:'发布日期'}],stats:[{by:'dept',map:null}]},
+  {id:'D4',cat:'double',name:'变更管理 MOC',prio:'P2',type:'crud',table:'moc_changes',titleKey:'title',desc:'工艺/设备/人员/组织变更前的风险评估与审批。',form:[{k:'title',l:'变更标题',t:'text',req:1},{k:'change_type',l:'变更类型',t:'select',opt:{'工艺':'工艺','设备':'设备','人员':'人员','组织':'组织'}},{k:'dept',l:'部门',t:'text'},{k:'approver',l:'审批人',t:'text'},{k:'description',l:'变更描述',t:'textarea'},{k:'risk_assess',l:'风险评估',t:'textarea'}],cols:[{k:'code',l:'编码'},{k:'title',l:'变更标题'},{k:'change_type',l:'类型'},{k:'dept',l:'部门'},{k:'approver',l:'审批人'}],stats:[{by:'change_type',map:null}]},
+
+  // ③ 人员安全
+  {id:'H1',cat:'people',name:'安全培训教育',prio:'P0',type:'training',table:'trainings',titleKey:'title',desc:'课程库、培训计划、在线学习、学时台账、三级安全教育。',form:[{k:'title',l:'培训主题',t:'text',req:1},{k:'train_type',l:'类型',t:'select',opt:L.trainType},{k:'plan_date',l:'计划日期',t:'date'},{k:'trainer',l:'讲师',t:'text'},{k:'target_dept',l:'对象部门',t:'text'}],cols:[{k:'code',l:'编码'},{k:'title',l:'主题'},{k:'train_type',l:'类型',map:'trainType'},{k:'plan_date',l:'计划日期'},{k:'trainer',l:'讲师'},{k:'status',l:'状态',map:'trainStatus'}],status:{key:'status',map:'trainStatus',flow:'trainStatus'},stats:[{by:'status',map:'trainStatus'}]},
+  {id:'H2',cat:'people',name:'考试测评',prio:'P0',type:'exam',table:'exams',titleKey:'title',desc:'题库/组卷/在线考试/自动判分/补考，7 题型防作弊。',form:[{k:'title',l:'考试名称',t:'text',req:1},{k:'question_count',l:'题量',t:'number'},{k:'pass_score',l:'及格分',t:'number'},{k:'duration_min',l:'时长(分钟)',t:'number'}],cols:[{k:'code',l:'编码'},{k:'title',l:'考试'},{k:'question_count',l:'题量'},{k:'pass_score',l:'及格分'},{k:'status',l:'状态',map:'examStatus'}],status:{key:'status',map:'examStatus',flow:'examStatus'},stats:[{by:'status',map:'examStatus'}]},
+  {id:'H3',cat:'people',name:'证书与资质',prio:'P0',type:'crud',table:'certificates',titleKey:'holder',desc:'特种作业证照、复审提醒、持证上岗拦截。',form:[{k:'holder',l:'持证人',t:'text',req:1},{k:'cert_type',l:'证照类型',t:'select',opt:L.certType},{k:'cert_no',l:'证书编号',t:'text'},{k:'issue_date',l:'发证日期',t:'date'},{k:'expire_date',l:'到期日期',t:'date'}],cols:[{k:'code',l:'编码'},{k:'holder',l:'持证人'},{k:'cert_type',l:'类型',map:'certType'},{k:'expire_date',l:'到期'},{k:'status',l:'状态',map:'certStatus'}],stats:[{by:'status',map:'certStatus'}]},
+  {id:'H4',cat:'people',name:'行为安全观察',prio:'P1',type:'crud',table:'bbs_observations',titleKey:'observer',desc:'BBS 行为观察卡（行为安全观察）。',form:[{k:'observer',l:'观察人',t:'text',req:1},{k:'observe_date',l:'观察日期',t:'date'},{k:'location',l:'观察地点',t:'text'},{k:'category',l:'观察类别',t:'text'},{k:'is_safe',l:'是否安全',t:'select',opt:{'安全':'安全','不安全':'不安全'}},{k:'behavior_desc',l:'行为描述',t:'textarea'}],cols:[{k:'code',l:'编码'},{k:'observer',l:'观察人'},{k:'observe_date',l:'日期'},{k:'location',l:'地点'},{k:'is_safe',l:'是否安全'},{k:'category',l:'类别'}],stats:[{by:'is_safe',map:null}]},
+  {id:'H5',cat:'people',name:'职业健康',prio:'P1',type:'crud',table:'health_checks',titleKey:'employee',desc:'危害因素台账、职业健康体检、PPE 管理。',form:[{k:'employee',l:'员工姓名',t:'text',req:1},{k:'check_type',l:'体检类型',t:'select',opt:{'上岗前':'上岗前','在岗':'在岗','离岗':'离岗','应急':'应急'}},{k:'check_date',l:'体检日期',t:'date'},{k:'hospital',l:'体检机构',t:'text'},{k:'result',l:'体检结果',t:'text'},{k:'next_date',l:'下次复查',t:'date'}],cols:[{k:'code',l:'编码'},{k:'employee',l:'员工'},{k:'check_type',l:'类型'},{k:'check_date',l:'日期'},{k:'result',l:'结果'},{k:'next_date',l:'下次复查'}],stats:[{by:'check_type',map:null}]},
+  {id:'H6',cat:'people',name:'安全绩效考核',prio:'P1',type:'crud',table:'performance',titleKey:'kpi_name',desc:'个人/部门安全绩效、KPI 统计、奖惩记录。',form:[{k:'kpi_name',l:'指标名称',t:'text',req:1},{k:'dept',l:'部门',t:'text'},{k:'period',l:'考核周期',t:'text'},{k:'target',l:'目标值',t:'number'},{k:'actual',l:'实际值',t:'number'},{k:'score',l:'得分',t:'number'}],cols:[{k:'code',l:'编码'},{k:'kpi_name',l:'指标'},{k:'dept',l:'部门'},{k:'period',l:'周期'},{k:'target',l:'目标'},{k:'actual',l:'实际'},{k:'score',l:'得分'}],stats:[{by:'dept',map:null}]},
+
+  // ④ 作业安全
+  {id:'W1',cat:'work',name:'特殊作业许可',prio:'P0',type:'permit',table:'permits',titleKey:'code',desc:'8+1 类作业票电子化全流程（GB 30871-2022），JSA+分级审批+气体检测。',form:[{k:'work_type',l:'作业类型',t:'select',opt:L.permitType,req:1},{k:'level',l:'等级',t:'select',opt:L.permitLevel},{k:'applicant',l:'申请人',t:'text'},{k:'work_area',l:'作业区域',t:'text'},{k:'gas_test',l:'气体检测',t:'text'}],cols:[{k:'code',l:'编码'},{k:'work_type',l:'类型',map:'permitType'},{k:'level',l:'等级',map:'permitLevel'},{k:'applicant',l:'申请人'},{k:'work_area',l:'区域'},{k:'status',l:'状态',map:'permitStatus'}],status:{key:'status',map:'permitStatus',flow:'permitStatus'},stats:[{by:'status',map:'permitStatus'}]},
+  {id:'W2',cat:'work',name:'承包商管理',prio:'P1',type:'crud',table:'contractors',titleKey:'name',desc:'外包单位与人员全生命周期安全管控。',form:[{k:'name',l:'单位名称',t:'text',req:1},{k:'contact',l:'联系人',t:'text'},{k:'qual_cert',l:'资质证书',t:'text'},{k:'valid_until',l:'资质有效期',t:'date'},{k:'safety_score',l:'安全评分',t:'number'}],cols:[{k:'code',l:'编码'},{k:'name',l:'单位名称'},{k:'contact',l:'联系人'},{k:'qual_cert',l:'资质'},{k:'valid_until',l:'有效期'},{k:'safety_score',l:'评分'}],stats:[{by:'safety_score',map:null}]},
+  {id:'W3',cat:'work',name:'危险作业管控',prio:'P2',type:'crud',table:'danger_works',titleKey:'work_type',desc:'非常规作业审批、危险作业报备。',form:[{k:'work_type',l:'作业类型',t:'text',req:1},{k:'location',l:'作业地点',t:'text'},{k:'applicant',l:'申请人',t:'text'},{k:'plan_date',l:'计划日期',t:'date'},{k:'supervisor',l:'监护人',t:'text'},{k:'risk_desc',l:'风险交底',t:'textarea'}],cols:[{k:'code',l:'编码'},{k:'work_type',l:'作业类型'},{k:'location',l:'地点'},{k:'applicant',l:'申请人'},{k:'plan_date',l:'计划日期'},{k:'supervisor',l:'监护人'}],stats:[{by:'work_type',map:null}]},
+  {id:'W4',cat:'work',name:'上锁挂牌 LOTO',prio:'P2',type:'crud',table:'loto_records',titleKey:'equipment',desc:'能量隔离程序化管理。',form:[{k:'equipment',l:'设备名称',t:'text',req:1},{k:'energy_type',l:'能量类型',t:'select',opt:{'电能':'电能','机械能':'机械能','液压':'液压','气动':'气动','化学能':'化学能','热能':'热能'}},{k:'lock_no',l:'锁编号',t:'text'},{k:'lock_date',l:'上锁日期',t:'date'},{k:'unlock_date',l:'解锁日期',t:'date'},{k:'operator',l:'操作人',t:'text'}],cols:[{k:'code',l:'编码'},{k:'equipment',l:'设备'},{k:'energy_type',l:'能量类型'},{k:'lock_no',l:'锁编号'},{k:'lock_date',l:'上锁日期'},{k:'operator',l:'操作人'}],stats:[{by:'energy_type',map:null}]},
+
+  // ⑤ 设备设施
+  {id:'E1',cat:'equip',name:'设备台账',prio:'P0',type:'crud',table:'equipment',titleKey:'name',desc:'一机一档、二维码标签、关联图纸资料。',form:[{k:'name',l:'设备名称',t:'text',req:1},{k:'category',l:'类别',t:'select',opt:L.eqCategory},{k:'dept',l:'部门',t:'text'},{k:'status',l:'状态',t:'select',opt:L.eqStatus},{k:'next_inspect_date',l:'下次检验',t:'date'}],cols:[{k:'code',l:'编码'},{k:'name',l:'名称'},{k:'category',l:'类别',map:'eqCategory'},{k:'dept',l:'部门'},{k:'status',l:'状态',map:'eqStatus'},{k:'next_inspect_date',l:'下次检验'}],stats:[{by:'category',map:'eqCategory'}]},
+  {id:'E2',cat:'equip',name:'点检巡检',prio:'P0',type:'crud',table:'inspections',titleKey:'equipment',desc:'计划生成任务、扫码执行、GPS+时间窗防代检、异常转隐患。',form:[{k:'equipment',l:'设备',t:'text',req:1},{k:'plan_item',l:'点检项',t:'text'},{k:'inspector',l:'点检人',t:'text'},{k:'result',l:'结果',t:'select',opt:L.inspectResult},{k:'inspect_date',l:'点检日期',t:'date'}],cols:[{k:'code',l:'编码'},{k:'equipment',l:'设备'},{k:'plan_item',l:'点检项'},{k:'inspector',l:'点检人'},{k:'result',l:'结果',map:'inspectResult'},{k:'inspect_date',l:'日期'}],stats:[{by:'result',map:'inspectResult'}]},
+  {id:'E3',cat:'equip',name:'检维修管理',prio:'P1',type:'crud',table:'maintenances',titleKey:'equipment',desc:'维修工单、高危检修作业、验收。',form:[{k:'equipment',l:'设备名称',t:'text',req:1},{k:'fault_desc',l:'故障描述',t:'textarea'},{k:'applicant',l:'报修人',t:'text'},{k:'plan_date',l:'计划维修日',t:'date'},{k:'result',l:'维修结果',t:'text'}],cols:[{k:'code',l:'编码'},{k:'equipment',l:'设备'},{k:'fault_desc',l:'故障'},{k:'applicant',l:'报修人'},{k:'plan_date',l:'计划日期'},{k:'result',l:'结果'}],stats:[{by:'result',map:null}]},
+  {id:'E4',cat:'equip',name:'特种设备管理',prio:'P0',type:'crud',table:'special_equipment',titleKey:'name',desc:'特种设备台账、法定检验、30 天提醒。',form:[{k:'name',l:'设备名称',t:'text',req:1},{k:'reg_no',l:'登记证号',t:'text'},{k:'kind',l:'种类',t:'select',opt:L.seqKind},{k:'next_check_date',l:'下次检验',t:'date'}],cols:[{k:'code',l:'编码'},{k:'name',l:'名称'},{k:'kind',l:'种类',map:'seqKind'},{k:'reg_no',l:'登记证号'},{k:'next_check_date',l:'下次检验'},{k:'status',l:'状态',map:'seqStatus'}],stats:[{by:'status',map:'seqStatus'}]},
+  {id:'E5',cat:'equip',name:'安全设施管理',prio:'P1',type:'crud',table:'safety_facilities',titleKey:'name',desc:'消防/报警/防护设施台账与检测。',form:[{k:'name',l:'设施名称',t:'text',req:1},{k:'facility_type',l:'设施类型',t:'text'},{k:'location',l:'安装位置',t:'text'},{k:'check_date',l:'检测日期',t:'date'}],cols:[{k:'code',l:'编码'},{k:'name',l:'名称'},{k:'facility_type',l:'类型'},{k:'location',l:'位置'},{k:'check_date',l:'检测日期'}],stats:[{by:'facility_type',map:null}]},
+  {id:'E6',cat:'equip',name:'设备生命周期',prio:'P1',type:'crud',table:'equipment_lifecycle',titleKey:'equipment',desc:'启停/报废/转让管理、可靠性统计。',form:[{k:'equipment',l:'设备名称',t:'text',req:1},{k:'event_type',l:'事件类型',t:'select',opt:{'启用':'启用','停用':'停用','报废':'报废','转让':'转让'}},{k:'event_date',l:'发生日期',t:'date'},{k:'reason',l:'原因说明',t:'textarea'},{k:'operator',l:'操作人',t:'text'}],cols:[{k:'code',l:'编码'},{k:'equipment',l:'设备'},{k:'event_type',l:'事件'},{k:'event_date',l:'日期'},{k:'operator',l:'操作人'}],stats:[{by:'event_type',map:null}]},
+
+  // ⑥ 物料工艺
+  {id:'M1',cat:'material',name:'化学品管理',prio:'P1',type:'crud',table:'chemicals',titleKey:'name',desc:'化学品字典与全生命周期台账。',form:[{k:'name',l:'化学品名称',t:'text',req:1},{k:'cas_no',l:'CAS 编号',t:'text'},{k:'hazard_class',l:'危险分类',t:'text'},{k:'storage',l:'存放位置',t:'text'},{k:'stock',l:'库存量',t:'text'}],cols:[{k:'code',l:'编码'},{k:'name',l:'名称'},{k:'cas_no',l:'CAS'},{k:'hazard_class',l:'危险分类'},{k:'storage',l:'存放位置'},{k:'stock',l:'库存'}],stats:[{by:'hazard_class',map:null}]},
+  {id:'M2',cat:'material',name:'危废管理',prio:'P2',type:'crud',table:'hazardous_wastes',titleKey:'waste_name',desc:'危废产生-转移-处置联单管理。',form:[{k:'waste_name',l:'危废名称',t:'text',req:1},{k:'waste_code',l:'危废代码',t:'text'},{k:'quantity',l:'数量',t:'text'},{k:'unit',l:'单位',t:'text'},{k:'storage',l:'贮存位置',t:'text'},{k:'transfer_date',l:'转移日期',t:'date'}],cols:[{k:'code',l:'编码'},{k:'waste_name',l:'危废名称'},{k:'waste_code',l:'代码'},{k:'quantity',l:'数量'},{k:'storage',l:'贮存位置'},{k:'transfer_date',l:'转移日期'}],stats:[{by:'waste_name',map:null}]},
+  {id:'M3',cat:'material',name:'重大危险源',prio:'P2',type:'crud',table:'major_hazards',titleKey:'name',desc:'重大危险源辨识、评估与监控（GB 18218）。',form:[{k:'name',l:'危险源名称',t:'text',req:1},{k:'hazard_type',l:'危险类型',t:'select',opt:{'易燃易爆':'易燃易爆','有毒有害':'有毒有害','压力容器':'压力容器','其他':'其他'}},{k:'level',l:'等级',t:'select',opt:{'一级':'一级','二级':'二级','三级':'三级','四级':'四级'}},{k:'location',l:'位置',t:'text'},{k:'max_storage',l:'最大储量',t:'text'},{k:'controller',l:'负责人',t:'text'}],cols:[{k:'code',l:'编码'},{k:'name',l:'危险源'},{k:'hazard_type',l:'类型'},{k:'level',l:'等级'},{k:'location',l:'位置'},{k:'controller',l:'负责人'}],stats:[{by:'level',map:null}]},
+  {id:'M4',cat:'material',name:'工艺安全管理 PSM',prio:'P2',type:'crud',table:'psm_records',titleKey:'process_name',desc:'工艺安全信息、工艺危害分析（PHA）。',form:[{k:'process_name',l:'工艺名称',t:'text',req:1},{k:'method',l:'分析方法',t:'select',opt:{'HAZOP':'HAZOP','PHA':'PHA','LOPA':'LOPA','FTA':'FTA'}},{k:'analysis_date',l:'分析日期',t:'date'},{k:'owner',l:'负责人',t:'text'},{k:'result',l:'分析结论',t:'textarea'}],cols:[{k:'code',l:'编码'},{k:'process_name',l:'工艺'},{k:'method',l:'方法'},{k:'analysis_date',l:'日期'},{k:'owner',l:'负责人'}],stats:[{by:'method',map:null}]},
+
+  // ⑦ 消防管理
+  {id:'F1',cat:'fire',name:'消防设施管理',prio:'P1',type:'crud',table:'fire_facilities',titleKey:'name',desc:'全厂消防设施台账与定期检测。',form:[{k:'name',l:'设施名称',t:'text',req:1},{k:'facility_type',l:'设施类型',t:'select',opt:{'灭火器':'灭火器','消火栓':'消火栓','报警器':'报警器','喷淋':'喷淋'}},{k:'location',l:'安装位置',t:'text'},{k:'check_date',l:'最近检测',t:'date'},{k:'expire_date',l:'到期日期',t:'date'}],cols:[{k:'code',l:'编码'},{k:'name',l:'名称'},{k:'facility_type',l:'类型'},{k:'location',l:'位置'},{k:'expire_date',l:'到期'}],stats:[{by:'facility_type',map:null}]},
+  {id:'F2',cat:'fire',name:'防火巡查',prio:'P1',type:'crud',table:'fire_patrols',titleKey:'area',desc:'防火巡查计划与执行、消防隐患闭环。',form:[{k:'area',l:'巡查区域',t:'text',req:1},{k:'patrol_date',l:'巡查日期',t:'date'},{k:'inspector',l:'巡查人',t:'text'},{k:'result',l:'巡查结果',t:'select',opt:{'正常':'正常','异常':'异常'}},{k:'issue_desc',l:'问题描述',t:'textarea'}],cols:[{k:'code',l:'编码'},{k:'area',l:'区域'},{k:'patrol_date',l:'日期'},{k:'inspector',l:'巡查人'},{k:'result',l:'结果'}],stats:[{by:'result',map:null}]},
+  {id:'F3',cat:'fire',name:'消防演练与队伍',prio:'P2',type:'crud',table:'fire_drills',titleKey:'drill_type',desc:'消防演练、义务消防队管理。',form:[{k:'drill_type',l:'演练类型',t:'text',req:1},{k:'drill_date',l:'演练日期',t:'date'},{k:'organizer',l:'组织人',t:'text'},{k:'participants',l:'参与人数',t:'number'},{k:'result',l:'演练结果',t:'select',opt:{'合格':'合格','需改进':'需改进'}}],cols:[{k:'code',l:'编码'},{k:'drill_type',l:'演练类型'},{k:'drill_date',l:'日期'},{k:'organizer',l:'组织人'},{k:'participants',l:'人数'},{k:'result',l:'结果'}],stats:[{by:'result',map:null}]},
+
+  // ⑧ 环保管理
+  {id:'N1',cat:'env',name:'三废管理',prio:'P2',type:'crud',table:'wastes',titleKey:'waste_type',desc:'废气/废水/固废产生-处理-排放台账。',form:[{k:'waste_type',l:'废物类型',t:'select',opt:{'废气':'废气','废水':'废水','固废':'固废'},req:1},{k:'source',l:'产生源',t:'text'},{k:'quantity',l:'排放量',t:'text'},{k:'treatment',l:'处理方式',t:'text'},{k:'discharge_date',l:'排放日期',t:'date'}],cols:[{k:'code',l:'编码'},{k:'waste_type',l:'类型'},{k:'source',l:'产生源'},{k:'quantity',l:'排放量'},{k:'treatment',l:'处理方式'},{k:'discharge_date',l:'日期'}],stats:[{by:'waste_type',map:null}]},
+  {id:'N2',cat:'env',name:'排污许可与监测',prio:'P2',type:'crud',table:'emission_monitors',titleKey:'pollutant',desc:'排污许可证管理、自行监测、超标告警。',form:[{k:'pollutant',l:'污染物',t:'text',req:1},{k:'monitor_point',l:'监测点',t:'text'},{k:'standard_value',l:'标准值',t:'text'},{k:'actual_value',l:'实测值',t:'text'},{k:'monitor_date',l:'监测日期',t:'date'},{k:'result',l:'结果',t:'select',opt:{'达标':'达标','超标':'超标'}}],cols:[{k:'code',l:'编码'},{k:'pollutant',l:'污染物'},{k:'monitor_point',l:'监测点'},{k:'actual_value',l:'实测值'},{k:'monitor_date',l:'日期'},{k:'result',l:'结果'}],stats:[{by:'result',map:null}]},
+  {id:'N3',cat:'env',name:'环保合规检查',prio:'P2',type:'crud',table:'env_checks',titleKey:'check_type',desc:'环保检查、问题整改闭环、环保档案。',form:[{k:'check_type',l:'检查类型',t:'text',req:1},{k:'check_date',l:'检查日期',t:'date'},{k:'checker',l:'检查人',t:'text'},{k:'result',l:'检查结果',t:'select',opt:{'合格':'合格','不合格':'不合格'}},{k:'issue',l:'发现问题',t:'textarea'}],cols:[{k:'code',l:'编码'},{k:'check_type',l:'类型'},{k:'check_date',l:'日期'},{k:'checker',l:'检查人'},{k:'result',l:'结果'}],stats:[{by:'result',map:null}]},
+
+  // ⑨ 应急管理
+  {id:'R1',cat:'emerg',name:'应急预案',prio:'P1',type:'crud',table:'emergency_plans',titleKey:'name',desc:'预案库版本化管理（GB/T 29639-2020）。',form:[{k:'name',l:'预案名称',t:'text',req:1},{k:'plan_type',l:'预案类型',t:'select',opt:{'综合':'综合','专项':'专项','现场处置':'现场处置'}},{k:'version',l:'版本号',t:'text'},{k:'issue_date',l:'发布日期',t:'date'},{k:'review_date',l:'评审日期',t:'date'}],cols:[{k:'code',l:'编码'},{k:'name',l:'预案名称'},{k:'plan_type',l:'类型'},{k:'version',l:'版本'},{k:'review_date',l:'评审日期'}],stats:[{by:'plan_type',map:null}]},
+  {id:'R2',cat:'emerg',name:'应急演练',prio:'P1',type:'crud',table:'emergency_drills',titleKey:'drill_type',desc:'演练计划、执行记录、评估。',form:[{k:'drill_type',l:'演练类型',t:'text',req:1},{k:'drill_date',l:'演练日期',t:'date'},{k:'organizer',l:'组织人',t:'text'},{k:'result',l:'演练结果',t:'select',opt:{'合格':'合格','需改进':'需改进'}},{k:'issue',l:'发现问题',t:'textarea'}],cols:[{k:'code',l:'编码'},{k:'drill_type',l:'演练类型'},{k:'drill_date',l:'日期'},{k:'organizer',l:'组织人'},{k:'result',l:'结果'}],stats:[{by:'result',map:null}]},
+  {id:'R3',cat:'emerg',name:'应急物资',prio:'P1',type:'crud',table:'emergency_supplies',titleKey:'name',desc:'应急物资/装备台账与效期管理。',form:[{k:'name',l:'物资名称',t:'text',req:1},{k:'supply_type',l:'物资类型',t:'text'},{k:'quantity',l:'数量',t:'number'},{k:'unit',l:'单位',t:'text'},{k:'location',l:'存放位置',t:'text'},{k:'expire_date',l:'有效期至',t:'date'}],cols:[{k:'code',l:'编码'},{k:'name',l:'物资'},{k:'supply_type',l:'类型'},{k:'quantity',l:'数量'},{k:'location',l:'位置'},{k:'expire_date',l:'有效期'}],stats:[{by:'supply_type',map:null}]},
+  {id:'R4',cat:'emerg',name:'应急响应',prio:'P1',type:'crud',table:'emergency_responses',titleKey:'incident',desc:'一键启动预案、响应流程、信息上报。',form:[{k:'incident',l:'事件名称',t:'text',req:1},{k:'start_time',l:'启动时间',t:'datetime'},{k:'level',l:'响应级别',t:'select',opt:{'重大':'重大','较大':'较大','一般':'一般'}},{k:'commander',l:'指挥人',t:'text'},{k:'summary',l:'响应总结',t:'textarea'}],cols:[{k:'code',l:'编码'},{k:'incident',l:'事件'},{k:'level',l:'级别'},{k:'start_time',l:'启动时间'},{k:'commander',l:'指挥人'},{k:'status',l:'状态'}],stats:[{by:'level',map:null}]},
+  {id:'R5',cat:'emerg',name:'应急队伍',prio:'P2',type:'crud',table:'emergency_teams',titleKey:'name',desc:'应急组织、值班排班、联络人。',form:[{k:'name',l:'队伍名称',t:'text',req:1},{k:'team_type',l:'队伍类型',t:'select',opt:{'义务消防队':'义务消防队','应急救援队':'应急救援队','医疗救护队':'医疗救护队'}},{k:'leader',l:'队长',t:'text'},{k:'members',l:'成员名单',t:'textarea'},{k:'contact',l:'联系方式',t:'text'}],cols:[{k:'code',l:'编码'},{k:'name',l:'队伍'},{k:'team_type',l:'类型'},{k:'leader',l:'队长'},{k:'contact',l:'联系方式'}],stats:[{by:'team_type',map:null}]},
+
+  // ⑩ 事故事件
+  {id:'I1',cat:'incident',name:'事故报告',prio:'P0',type:'crud',table:'incidents',titleKey:'title',desc:'事故快报与正式报告（国务院令 493 号时限）。',form:[{k:'title',l:'事故描述',t:'text',req:1},{k:'category',l:'类别',t:'select',opt:L.incidentCat},{k:'level',l:'等级',t:'select',opt:L.incidentLevel},{k:'location',l:'地点',t:'text'},{k:'occurred_at',l:'发生时间',t:'datetime'},{k:'reported_by',l:'报告人',t:'text'},{k:'description',l:'详情',t:'textarea'}],cols:[{k:'code',l:'编码'},{k:'title',l:'描述'},{k:'category',l:'类别',map:'incidentCat'},{k:'level',l:'等级',map:'incidentLevel'},{k:'location',l:'地点'},{k:'status',l:'状态',map:'incidentStatus'}],status:{key:'status',map:'incidentStatus',flow:'incidentStatus'},stats:[{by:'level',map:'incidentLevel'}]},
+  {id:'I2',cat:'incident',name:'事故调查',prio:'P0',type:'crud',table:'investigations',titleKey:'title',desc:'调查组、4M 归因、根因分析、5Why。',form:[{k:'title',l:'调查标题',t:'text',req:1},{k:'incident_code',l:'关联事故编码',t:'text'},{k:'method',l:'方法',t:'select',opt:L.invMethod},{k:'root_cause',l:'根因',t:'text'},{k:'responsibility',l:'责任认定',t:'text'},{k:'conclusion',l:'结论',t:'textarea'}],cols:[{k:'code',l:'编码'},{k:'title',l:'标题'},{k:'incident_code',l:'关联事故'},{k:'method',l:'方法',map:'invMethod'},{k:'root_cause',l:'根因'},{k:'status',l:'状态',map:'invStatus'}],status:{key:'status',map:'invStatus',flow:'invStatus'},stats:[{by:'status',map:'invStatus'}]},
+  {id:'I3',cat:'incident',name:'未遂事件',prio:'P1',type:'crud',table:'near_misses',titleKey:'title',desc:'near-miss 上报（不处罚）与统计分析。',form:[{k:'title',l:'事件描述',t:'text',req:1},{k:'category',l:'事件类别',t:'text'},{k:'location',l:'发生地点',t:'text'},{k:'occurred_at',l:'发生时间',t:'datetime'},{k:'reporter',l:'上报人',t:'text'},{k:'description',l:'详情',t:'textarea'}],cols:[{k:'code',l:'编码'},{k:'title',l:'描述'},{k:'category',l:'类别'},{k:'location',l:'地点'},{k:'occurred_at',l:'时间'}],stats:[{by:'category',map:null}]},
+  {id:'I4',cat:'incident',name:'三违管理',prio:'P1',type:'crud',table:'violations',titleKey:'person',desc:'违章违纪记录与处理。',form:[{k:'person',l:'违章人',t:'text',req:1},{k:'violation_type',l:'违章类型',t:'select',opt:{'违章指挥':'违章指挥','违章操作':'违章操作','违反劳动纪律':'违反劳动纪律'}},{k:'date',l:'发生日期',t:'date'},{k:'location',l:'发生地点',t:'text'},{k:'description',l:'违章描述',t:'textarea'},{k:'handler',l:'处理人',t:'text'}],cols:[{k:'code',l:'编码'},{k:'person',l:'违章人'},{k:'violation_type',l:'类型'},{k:'date',l:'日期'},{k:'location',l:'地点'}],stats:[{by:'violation_type',map:null}]},
+  {id:'I5',cat:'incident',name:'纠正预防 CAPA',prio:'P0',type:'crud',table:'capas',titleKey:'title',desc:'事故/审核/演练问题的纠正措施闭环。',form:[{k:'title',l:'措施标题',t:'text',req:1},{k:'source',l:'来源',t:'select',opt:L.capaSource},{k:'owner',l:'责任人',t:'text'},{k:'action',l:'行动内容',t:'textarea'},{k:'due_date',l:'截至日期',t:'date'}],cols:[{k:'code',l:'编码'},{k:'title',l:'标题'},{k:'source',l:'来源',map:'capaSource'},{k:'owner',l:'责任人'},{k:'due_date',l:'截至'},{k:'status',l:'状态',map:'capaStatus'}],status:{key:'status',map:'capaStatus',flow:'capaStatus'},stats:[{by:'status',map:'capaStatus'}]},
+  {id:'I6',cat:'incident',name:'工伤管理',prio:'P2',type:'crud',table:'work_injuries',titleKey:'employee',desc:'工伤申报、医疗记录、保险理赔跟踪。',form:[{k:'employee',l:'员工姓名',t:'text',req:1},{k:'injury_type',l:'伤害类型',t:'select',opt:{'机械伤害':'机械伤害','触电':'触电','高处坠落':'高处坠落','物体打击':'物体打击','其他':'其他'}},{k:'injury_date',l:'受伤日期',t:'date'},{k:'location',l:'受伤地点',t:'text'},{k:'severity',l:'严重程度',t:'select',opt:{'轻微伤':'轻微伤','轻伤':'轻伤','重伤':'重伤','死亡':'死亡'}},{k:'description',l:'情况描述',t:'textarea'}],cols:[{k:'code',l:'编码'},{k:'employee',l:'员工'},{k:'injury_type',l:'伤害类型'},{k:'injury_date',l:'日期'},{k:'severity',l:'程度'},{k:'status',l:'状态'}],stats:[{by:'severity',map:null}]},
+
+  // ⑪ 监测监控
+  {id:'S1',cat:'monitor',name:'IoT 在线监测',prio:'P2',type:'placeholder',desc:'气体/温湿度/液位/电流等传感器阈值监测。',subs:['设备接入','阈值规则','超限告警','历史曲线']},
+  {id:'S2',cat:'monitor',name:'AI 视觉识别',prio:'P2',type:'placeholder',desc:'未戴安全帽/明火/区域入侵等 AI 识别。',subs:['摄像头接入','置信度门槛','告警联动']},
+  {id:'S3',cat:'monitor',name:'视频监控联动',prio:'P2',type:'placeholder',desc:'与报警/作业票/定位联动的视频调阅。',subs:['点位关联','报警自动弹窗','录像回放']},
+  {id:'S4',cat:'monitor',name:'人员定位与围栏',prio:'P2',type:'placeholder',desc:'人员实时定位、电子围栏、SOS。',subs:['定位标签','越界/超时告警','SOS 求助']},
+  {id:'S5',cat:'monitor',name:'报警管理',prio:'P1',type:'crud',table:'alarms',titleKey:'content',desc:'全系统告警统一汇聚与处置闭环。',form:[{k:'content',l:'告警内容',t:'text',req:1},{k:'source',l:'告警来源',t:'text'},{k:'level',l:'告警级别',t:'select',opt:{'紧急':'紧急','重要':'重要','一般':'一般'}},{k:'occurred_at',l:'发生时间',t:'datetime'},{k:'handler',l:'处置人',t:'text'}],cols:[{k:'code',l:'编码'},{k:'source',l:'来源'},{k:'level',l:'级别'},{k:'content',l:'内容'},{k:'occurred_at',l:'时间'},{k:'status',l:'状态'}],stats:[{by:'level',map:null}]},
+
+  // ⑫ 数据智能
+  {id:'A1',cat:'data',name:'驾驶舱',prio:'P0',type:'dashboard',desc:'全厂安全态势一屏总览：核心 KPI、四色图、趋势、预警中心。'},
+  {id:'A2',cat:'data',name:'统计分析报表',prio:'P0',type:'reports',desc:'月度安全报告、多维度统计、Excel 导出。'},
+  {id:'A3',cat:'data',name:'预测预警',prio:'P2',type:'crud',table:'warning_rules',titleKey:'rule_name',desc:'基于历史数据的风险预测与阈值预警（规则配置）。',form:[{k:'rule_name',l:'规则名称',t:'text',req:1},{k:'metric',l:'监控指标',t:'text'},{k:'threshold',l:'预警阈值',t:'text'},{k:'rule_desc',l:'规则说明',t:'textarea'}],cols:[{k:'code',l:'编码'},{k:'rule_name',l:'规则'},{k:'metric',l:'监控指标'},{k:'threshold',l:'阈值'}],stats:[{by:'metric',map:null}]},
+  {id:'A4',cat:'data',name:'智能问答',prio:'P1',type:'overview',desc:'制度知识库 RAG 问答、AI 助理。',subs:['文档切片向量化','混合检索','出处引用']},
+
+  // ⑬ 协同办公
+  {id:'O1',cat:'collab',name:'钉钉集成',prio:'P0',type:'integration',desc:'免登、消息、待办、审批、通讯录同步（办公主体）。'},
+  {id:'O2',cat:'collab',name:'移动端',prio:'P0',type:'feature',desc:'钉钉 H5 微应用：随手拍/扫码/审批/学习。',subs:['拍照压缩上传','离线队列','扫码点检','语音输入']},
+  {id:'O3',cat:'collab',name:'门户工作台',prio:'P0',type:'feature',desc:'按角色动态渲染的工作台首页（即本门户）。',subs:['角色宫格','待办聚合','消息通知','快捷入口']},
+  {id:'O4',cat:'collab',name:'任务协同',prio:'P2',type:'crud',table:'shift_handovers',titleKey:'handover_from',desc:'交接班、检查任务指派等轻量协同。',form:[{k:'handover_from',l:'交班人',t:'text',req:1},{k:'handover_to',l:'接班人',t:'text'},{k:'shift_date',l:'交接日期',t:'date'},{k:'shift_type',l:'班次',t:'select',opt:{'白班':'白班','夜班':'夜班'}},{k:'content',l:'交接内容',t:'textarea'}],cols:[{k:'code',l:'编码'},{k:'shift_date',l:'日期'},{k:'shift_type',l:'班次'},{k:'handover_from',l:'交班人'},{k:'handover_to',l:'接班人'}],stats:[{by:'shift_type',map:null}]}
+];
+
+var byId={}; MODULES.forEach(function(m){byId[m.id]=m;});
+
+/* ===== 渲染侧边栏 ===== */
+function renderSidebar(){
+  var h='';
+  CATS.forEach(function(c){
+    var mods=MODULES.filter(function(m){return m.cat===c.id;});
+    h+='<div class="cat open" data-cat="'+c.id+'">';
+    h+='<button class="cat-head" data-cat="'+c.id+'"><span>'+esc(c.name)+'</span><span class="cnt">'+mods.length+'</span></button>';
+    h+='<div class="mod-list">';
+    mods.forEach(function(m){
+      h+='<button class="mod-item" data-id="'+m.id+'"><span class="code">'+m.id+'</span><span class="prio-dot '+m.prio.toLowerCase()+'"></span><span>'+esc(m.name)+'</span></button>';
+    });
+    h+='</div></div>';
+  });
+  document.getElementById('sbNav').innerHTML=h;
+  document.getElementById('sbNav').addEventListener('click',function(e){
+    var hd=e.target.closest('.cat-head');
+    if(hd){ hd.parentNode.classList.toggle('open'); return; }
+    var it=e.target.closest('.mod-item');
+    if(it){ openModule(it.dataset.id); }
+  });
+}
+
+function openModule(id){
+  document.querySelectorAll('.mod-item').forEach(function(x){x.classList.toggle('active',x.dataset.id===id);});
+  renderView(byId[id]);
+  closeNav();
+}
+function closeNav(){ var sb=document.getElementById('sidebar'); if(sb) sb.classList.remove('open'); document.body.classList.remove('nav-open'); }
+(function(){
+  var tg=document.getElementById('navToggle'), bd=document.getElementById('backdrop');
+  if(tg) tg.addEventListener('click',function(){ var sb=document.getElementById('sidebar'); var open=sb.classList.toggle('open'); document.body.classList.toggle('nav-open',open); });
+  if(bd) bd.addEventListener('click',closeNav);
+})();
+
+/* ===== 视图渲染 ===== */
+function renderView(m){
+  var cat=CATS.find(function(c){return c.id===m.cat;});
+  document.getElementById('crumb').innerHTML=esc(cat.name)+' / <b>'+esc(m.name)+'</b>';
+  var c=document.getElementById('content');
+  if(m.type==='crud'||m.type==='readonly') return renderCrud(m,c);
+  if(m.type==='overview') return renderOverview(m,c);
+  if(m.type==='placeholder') return renderPlaceholder(m,c);
+  if(m.type==='dashboard') return renderDashboard(c);
+  if(m.type==='reports') return renderReports(c);
+  if(m.type==='integration') return renderIntegration(c);
+  if(m.type==='feature') return renderFeature(m,c);
+  if(m.type==='permit') return renderPermit(m,c);
+  if(m.type==='training') return renderTraining(m,c);
+  if(m.type==='exam') return renderExam(m,c);
+}
+
+/* CRUD / 只读 */
+function renderCrud(m,c){
+  var head='<div class="page-head"><h1>'+esc(m.name)+'</h1><span class="prio '+m.prio.toLowerCase()+'">'+m.prio+'</span></div><p class="desc">'+esc(m.desc)+'</p>';
+  var stats='<div class="stats" id="stats"></div>';
+  var form='';
+  if(m.type!=='readonly'){
+    var rows=''; var n=0;
+    m.form.forEach(function(f){
+      var one=(f.t==='textarea'); if(one){ rows+='<div class="form-row one">'; } else { if(n%2===0) rows+='<div class="form-row">'; }
+      var input='';
+      if(f.t==='select'){ input='<select id="f-'+m.id+'-'+f.k+'">'+Object.keys(f.opt||{}).map(function(k){return '<option value="'+esc(k)+'">'+esc(f.opt[k])+'</option>';}).join('')+'</select>'; }
+      else if(f.t==='textarea'){ input='<textarea id="f-'+m.id+'-'+f.k+'" placeholder="'+esc(f.l)+'"></textarea>'; }
+      else if(f.t==='date'){ input='<input id="f-'+m.id+'-'+f.k+'" type="date">'; }
+      else if(f.t==='datetime'){ input='<input id="f-'+m.id+'-'+f.k+'" type="datetime-local">'; }
+      else if(f.t==='number'){ input='<input id="f-'+m.id+'-'+f.k+'" type="number">'; }
+      else { input='<input id="f-'+m.id+'-'+f.k+'" placeholder="'+esc(f.l)+'">'; }
+      rows+='<div class="field"><label>'+esc(f.l)+(f.req?' *':'')+'</label>'+input+'</div>';
+      if(one){ rows+='</div>'; } else if(n%2===1){ rows+='</div>'; }
+      n++;
+    });
+    if(n%2===1) rows+='</div>';
+    form='<div class="card"><h3>新增'+esc(m.name)+'</h3>'+rows+'<button class="btn" onclick="submitCrud(\''+m.id+'\')">提交</button><div class="msg" id="msg-'+m.id+'"></div></div>';
+  }
+  c.innerHTML=head+stats+'<div class="split'+(m.type==='readonly'?' full':'')+'">'+form+'<div class="card"><h3>'+esc(m.name)+'台账</h3><div class="table-wrap" id="tbl-'+m.id+'"></div></div></div>';
+  loadList(m);
+}
+
+async function loadList(m){
+  try{
+    var list=await api('GET','/api/table/'+m.table);
+    setDb(true,'数据库已连接');
+    renderStats(m,list);
+    var rows=list.map(function(r){return crudRow(m,r);}).join('');
+    var hasAct=m.status||m.id==='E2'||m.id==='I1';
+    document.getElementById('tbl-'+m.id).innerHTML=list.length?
+      '<table><thead><tr>'+m.cols.map(function(cl){return '<th>'+esc(cl.l)+'</th>';}).join('')+(hasAct?'<th>操作</th>':'')+'</tr></thead><tbody>'+rows+'</tbody></table>'
+      :'<div class="empty">暂无数据</div>';
+  }catch(e){
+    setDb(false,'数据库未连接');
+    document.getElementById('tbl-'+m.id).innerHTML='<div class="empty">'+esc(e.message)+'</div>';
+  }
+}
+
+function cell(m,cl,r){
+  var v=r[cl.k];
+  if(cl.k==='created_at'||cl.k==='occurred_at'){ v=v?String(v).slice(0,16).replace('T',' '):'-'; }
+  else if(cl.k==='file_size'||cl.k==='enabled'){ v=(cl.k==='enabled')?(v?'是':'否'):(v==null?'-':v); }
+  if(cl.k==='overdue_flag'){ return v==1?pill('逾期','danger'):pill('正常','ok'); }
+  if(cl.map) return pill(lbl(cl.map,v), pillCls(String(v==null?'':v)));
+  return esc(v==null||v===''?'-':v);
+}
+function crudRow(m,r){
+  var tds=m.cols.map(function(cl){ return '<td'+(cl.k==='code'?' class="code"':'')+'>'+cell(m,cl,r)+'</td>'; }).join('');
+  var extra='';
+  if(m.id==='E2'&&(r.result==='EXCEPTION'||r.result==='FAIL')) extra='<button class="btn mini" onclick="inspToHazard('+r.id+')">转隐患</button>';
+  if(m.id==='I1'&&r.status!=='CLOSED') extra=(extra?extra+' ':'')+'<button class="btn mini" onclick="closeIncident('+r.id+')">结案</button>';
+  var act='';
+  if(m.status){ act=(nextOf(m.table, r[m.status.key])?'<button class="btn mini" onclick="advanceTo(\''+m.id+'\','+r.id+')">推进</button>':'<span class="pill ok">已闭环</span>'); }
+  if(extra) act=act?(act+' '+extra):extra;
+  return '<tr>'+tds+(act?'<td>'+act+'</td>':'')+'</tr>';
+}
+function renderStats(m,list){
+  var cards=[{k:'总数',v:list.length}];
+  (m.stats||[]).forEach(function(s){
+    var g={}; list.forEach(function(x){ var v=x[s.by]||'未分类'; g[v]=(g[v]||0)+1; });
+    Object.keys(g).sort(function(a,b){return g[b]-g[a];}).slice(0,3).forEach(function(k){ cards.push({k:lbl(s.map,k),v:g[k]}); });
+  });
+  document.getElementById('stats').innerHTML=cards.map(function(c){return '<div class="stat-card"><div class="k">'+esc(c.k)+'</div><div class="v">'+c.v+'</div></div>';}).join('');
+}
+async function submitCrud(id){
+  var m=byId[id], body={};
+  for(var f of m.form){ var el=document.getElementById('f-'+id+'-'+f.k); if(!el)continue; var v=el.value.trim(); if(f.t==='number'&&v!==''){ v=Number(v); } if(v!==''){ body[f.k]=v; } }
+  var missing=m.form.filter(function(f){return f.req && (body[f.k]===undefined||body[f.k]==='');});
+  var msg=document.getElementById('msg-'+id);
+  if(missing.length){ msg.className='msg err'; msg.textContent='请填写：'+missing.map(function(f){return f.l;}).join('、'); return; }
+  try{ await api('POST','/api/table/'+m.table,body); msg.className='msg'; msg.textContent='已保存，台账已刷新'; m.form.forEach(function(f){var el=document.getElementById('f-'+id+'-'+f.k); if(el) el.value='';}); loadList(m); }
+  catch(e){ msg.className='msg err'; msg.textContent=esc(e.message); }
+}
+/* 概览 P1 */
+function renderOverview(m,c){
+  var chips=(m.subs||[]).map(function(s){return '<span class="chip">'+esc(s)+'</span>';}).join('');
+  c.innerHTML='<div class="page-head"><h1>'+esc(m.name)+'</h1><span class="prio p1">'+m.prio+'</span></div><p class="desc">'+esc(m.desc)+'</p>'
+    +'<div class="ov-card"><h3>关键子功能</h3><div class="chips">'+chips+'</div><div class="note">该模块已在全景清单中定义，本版提供概览；详细 CRUD 与状态机按二期排期接入。</div></div>';
+}
+
+/* 占位 P2 */
+function renderPlaceholder(m,c){
+  var chips=(m.subs||[]).map(function(s){return '<span class="chip">'+esc(s)+'</span>';}).join('');
+  c.innerHTML='<div class="page-head"><h1>'+esc(m.name)+'</h1><span class="prio p2">'+m.prio+'</span></div><p class="desc">'+esc(m.desc)+'</p>'
+    +'<div class="ov-card"><h3>功能规划</h3><div class="chips">'+chips+'</div><div class="note">P2 按需触发（客户有设备基础或明确需求时提前），暂未启用。</div></div>';
+}
+
+/* 特性页 O2/O3 */
+function renderFeature(m,c){
+  var chips=(m.subs||[]).map(function(s){return '<span class="chip">'+esc(s)+'</span>';}).join('');
+  c.innerHTML='<div class="page-head"><h1>'+esc(m.name)+'</h1><span class="prio '+m.prio.toLowerCase()+'">'+m.prio+'</span></div><p class="desc">'+esc(m.desc)+'</p>'
+    +'<div class="ov-card"><h3>能力说明</h3><div class="chips">'+chips+'</div><div class="note">'+(m.id==='O3'?'本门户即 O3 门户工作台的呈现形式。':m.id==='O2'?'移动端以钉钉 H5 微应用交付，与门户共享同一数据后端。':'')+'</div></div>';
+}
+
+/* 驾驶舱 A1 */
+async function renderDashboard(c){
+  c.innerHTML='<div class="page-head"><h1>安全态势驾驶舱</h1><span class="prio p0">P0</span></div><p class="desc">全厂安全态势一屏总览。</p><div id="dash-body"><div class="empty">加载中…</div></div>';
+  try{
+    var d=await api('GET','/api/dashboard'); setDb(true,'数据库已连接');
+    var cnt=d.counts||{};
+    var kpi=[['隐患总数',cnt.hazards||0],['重大隐患',d.hazards.byLevel.MAJOR||0],['逾期隐患',d.hazards.overdue||0],['风险单元',d.riskUnits.total||0],['待办工单',(d.tickets.byStatus.OPEN||0)+(d.tickets.byStatus.DOING||0)],['逾期工单',d.tickets.overdue||0],['特种设备',cnt.special_equipment||0],['证书临期/过期',(d.certificates&&d.certificates.expiring)||0],['未结事故',(d.incidents.byStatus.REPORTED||0)+(d.incidents.byStatus.INVESTIGATING||0)],['培训计划',cnt.trainings||0]];
+    var risk=['MAJOR','HIGH','MID','LOW'].map(function(lv){return {lv:lv,n:d.riskUnits.byLevel[lv]||0,label:L.riskLevel[lv],c:lv==='MAJOR'?'#F53F3F':lv==='HIGH'?'#FF7D00':lv==='MID'?'#F7BA1E':'#1677FF'};});
+    var hz=d.hazards.byStatus||{};
+    document.getElementById('dash-body').innerHTML=
+      '<div class="stats">'+kpi.map(function(k){return '<div class="stat-card"><div class="k">'+k[0]+'</div><div class="v">'+k[1]+'</div></div>';}).join('')+'</div>'
+      +'<div class="matrix" style="margin-bottom:16px">'+risk.map(function(r){return '<div class="mc" style="background:'+r.c+'"><div class="n">'+r.label+'风险</div><div class="v">'+r.n+'</div></div>';}).join('')+'</div>'
+      +'<div class="ov-card"><h3>63 模块覆盖度</h3><div class="chips"><span class="chip">P0 一期必做：'+MODULES.filter(function(m){return m.prio==='P0';}).length+'</span><span class="chip">P1 二期：'+MODULES.filter(function(m){return m.prio==='P1';}).length+'</span><span class="chip">P2 按需：'+MODULES.filter(function(m){return m.prio==='P2';}).length+'</span><span class="chip">总计：'+MODULES.length+'</span></div></div>';
+  }catch(e){ setDb(false,'数据库未连接'); document.getElementById('dash-body').innerHTML='<div class="empty">'+esc(e.message)+'</div>'; }
+}
+
+/* 报表 A2 */
+async function renderReports(c){
+  c.innerHTML='<div class="page-head"><h1>统计分析报表</h1><span class="prio p0">P0</span></div><p class="desc">月度安全报告与多维统计。</p><div id="rep-body"><div class="empty">加载中…</div></div>';
+  try{
+    var d=await api('GET','/api/dashboard'); setDb(true,'数据库已连接');
+    var cnt=d.counts||{};
+    var hz=d.hazards.byStatus||{};
+    document.getElementById('rep-body').innerHTML=
+      '<div class="grid" style="grid-template-columns:1fr 1fr">'
+      +'<div class="card"><h3>隐患状态分布</h3><div class="chips">'+Object.keys(L.hzStatus).map(function(k){return '<span class="chip">'+L.hzStatus[k]+'：'+(hz[k]||0)+'</span>';}).join('')+'</div></div>'
+      +'<div class="card"><h3>各模块数据量</h3><div class="chips">'+Object.keys(cnt).slice(0,20).map(function(t){return '<span class="chip">'+t+'：'+cnt[t]+'</span>';}).join('')+'</div></div>'
+      +'</div><div class="ov-card" style="margin-top:16px"><h3>导出</h3><div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn" onclick="exportHazardsCsv()">导出隐患台账 CSV</button></div><div class="note">月度报告（Word/PDF）按后续排期接入；CSV 可直接用 Excel 打开。</div></div>';
+  }catch(e){ setDb(false,'数据库未连接'); document.getElementById('rep-body').innerHTML='<div class="empty">'+esc(e.message)+'</div>'; }
+}
+async function exportHazardsCsv(){
+  try{
+    var list=await api('GET','/api/table/hazards');
+    var rows=[['编码','描述','等级','部门','位置','责任人','来源','状态','逾期','整改期限']];
+    list.forEach(function(x){ rows.push([x.code,x.title,x.level,x.dept||'',x.location||'',x.assignee||'',x.source||'',x.status,x.overdue_flag==1?'是':'否',x.rectify_deadline||'']); });
+    var csv='\ufeff'+rows.map(function(r){ return r.map(function(c2){ return '"'+String(c2).replace(/"/g,'""')+'"'; }).join(','); }).join('\r\n');
+    var blob=new Blob([csv],{type:'text/csv;charset=utf-8'}); var a=document.createElement('a');
+    a.href=URL.createObjectURL(blob); a.download='隐患台账.csv'; a.click(); URL.revokeObjectURL(a.href);
+  }catch(e){ alert('导出失败：'+esc(e.message)); }
+}
+
+/* 钉钉集成 O1 */
+async function renderIntegration(c){
+  c.innerHTML='<div class="page-head"><h1>钉钉集成</h1><span class="prio p0">P0</span></div><p class="desc">免登、消息、待办、审批、通讯录同步（办公主体），支持降级模式。</p><div id="int-body"><div class="empty">加载中…</div></div>';
+  try{
+    var list=await api('GET','/api/table/dicts'); setDb(true,'数据库已连接');
+    var items=list.filter(function(x){return x.scope==='INTEGRATION';});
+    document.getElementById('int-body').innerHTML='<div class="card"><h3>集成配置</h3><div>'+
+      items.map(function(x){return '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><div style="width:180px;font-size:13px;color:var(--text-2)">'+esc(x.label||x.code)+'</div><input id="int-'+x.id+'" style="flex:1;min-height:34px;padding:0 12px;border:1px solid var(--border-2);border-radius:6px;background:var(--bg-card);color:var(--text-1)" value="'+esc(x.value||'')+'"/><button class="btn mini" onclick="saveInt('+x.id+')">保存</button></div>';}).join('')
+      +'</div><div class="note">运行时注入 SUPABASE/钉钉等环境变量；此处仅为演示配置，发布环境变量由平台管理。</div></div>';
+  }catch(e){ setDb(false,'数据库未连接'); document.getElementById('int-body').innerHTML='<div class="empty">'+esc(e.message)+'</div>'; }
+}
+async function saveInt(id){
+  var el=document.getElementById('int-'+id); var v=el.value.trim();
+  try{ await api('PATCH','/api/table/dicts/'+id,{value:v}); el.style.borderColor='var(--success-500)'; setTimeout(function(){el.style.borderColor='';},1200); }
+  catch(e){ alert(e.message); }
+}
+
+async function advanceTo(id,rowId){
+  var m=byId[id];
+  try{
+    var list=await api('GET','/api/table/'+m.table);
+    var row=list.find(function(o){return o.id===rowId;});
+    var next=nextOf(m.table, row[m.status.key]);
+    if(next){ var patch={}; patch[m.status.key]=next; await api('PATCH','/api/table/'+m.table+'/'+rowId,patch); loadList(m); }
+  }catch(e){ alert(e.message); }
+}
+async function inspToHazard(id){ try{ var d=await api('POST','/api/inspections/to-hazard',{inspection_id:id}); alert(d.existed?('该点检已转过隐患：'+d.hazard.code):('已生成隐患：'+d.hazard.code)); }catch(e){ alert(e.message); } }
+async function closeIncident(id){ try{ var d=await api('POST','/api/incidents/'+id+'/close'); alert('已结案（四不放过校验通过），自动生成风险复评工单：'+d.ticket); loadList(byId['I1']); }catch(e){ alert('结案被拦：'+e.message); } }
+
+/* ===== W1 作业票 ===== */
+function renderPermit(m,c){
+  c.innerHTML='<div class="page-head"><h1>'+esc(m.name)+'</h1><span class="prio p0">P0</span></div><p class="desc">'+esc(m.desc)+'</p>'
+    +'<div class="card" style="margin-bottom:14px"><h3>新增作业票</h3>'
+    +'<div class="form-row"><div class="field"><label>作业类型 *</label><select id="p-type">'+Object.keys(L.permitType).map(function(k){return '<option value="'+k+'">'+L.permitType[k]+'</option>';}).join('')+'</select></div><div class="field"><label>等级</label><select id="p-level">'+Object.keys(L.permitLevel).map(function(k){return '<option value="'+k+'">'+L.permitLevel[k]+'</option>';}).join('')+'</select></div></div>'
+    +'<div class="form-row"><div class="field"><label>申请人 *</label><input id="p-applicant" placeholder="姓名"></div><div class="field"><label>作业区域</label><input id="p-area" placeholder="区域"></div></div>'
+    +'<button class="btn" onclick="addPermit()">创建</button><div class="msg" id="p-msg"></div></div>'
+    +'<div class="card"><h3>作业票台账</h3><div class="table-wrap" id="p-list"></div></div><div id="p-detail"></div>';
+  loadPermits();
+}
+async function addPermit(){
+  var body={work_type:document.getElementById('p-type').value,level:document.getElementById('p-level').value,applicant:document.getElementById('p-applicant').value.trim(),work_area:document.getElementById('p-area').value.trim()};
+  var msg=document.getElementById('p-msg');
+  if(!body.applicant){ msg.className='msg err'; msg.textContent='请填写申请人'; return; }
+  try{ await api('POST','/api/table/permits',body); msg.className='msg'; msg.textContent='已创建'; document.getElementById('p-applicant').value=''; loadPermits(); }
+  catch(e){ msg.className='msg err'; msg.textContent=esc(e.message); }
+}
+async function loadPermits(){
+  try{ var list=await api('GET','/api/table/permits'); setDb(true,'数据库已连接');
+    document.getElementById('p-list').innerHTML=list.length?'<table><thead><tr><th>编码</th><th>类型</th><th>等级</th><th>申请人</th><th>区域</th><th>状态</th><th></th></tr></thead><tbody>'+list.map(function(x){return '<tr><td class="code">'+esc(x.code)+'</td><td>'+esc(L.permitType[x.work_type]||x.work_type)+'</td><td>'+pill(L.permitLevel[x.level]||x.level,pillCls(x.level))+'</td><td>'+esc(x.applicant||'-')+'</td><td>'+esc(x.work_area||'-')+'</td><td>'+pill(L.permitStatus[x.status]||x.status,pillCls(x.status))+'</td><td><button class="btn mini" onclick="showPermit('+x.id+')">详情</button></td></tr>';}).join('')+'</tbody></table>':'<div class="empty">暂无作业票</div>';
+  }catch(e){ setDb(false,'数据库未连接'); }
+}
+async function showPermit(id){
+  try{
+    var d=await api('GET','/api/permits/'+id), p=d.permit;
+    var measures=(d.measures||[]).map(function(m){return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--border-1)"><span style="flex:1">'+esc(m.measure_text)+'</span>'+(m.confirmed==1?'<span class="pill ok">已确认</span>':'<button class="btn mini" onclick="confirmMeasure('+p.id+','+m.id+')">确认</button>')+'</div>';}).join('')||'<div class="empty">暂无措施，请从模板生成</div>';
+    var gasHtml=(d.gasses||[]).map(function(g){return '<div style="padding:6px 0;border-bottom:1px solid var(--border-1)">'+esc(String(g.detect_at||'').slice(0,16).replace('T',' '))+' · O2 '+esc(g.o2==null?'-':g.o2)+' | LEL '+esc(g.lel==null?'-':g.lel)+(g.result==='PASS'?' <span class="pill ok">合格</span>':' <span class="pill danger">越界</span>')+'</div>';}).join('')||'<div class="empty">暂无气体检测</div>';
+    var srl={APPLICANT:'申请人',APPROVER:'审批人',GUARDIAN:'监护人',RESPONSIBLE:'负责人'};
+    var signs=(d.signs||[]).map(function(s){return '<span class="chip">'+esc(srl[s.role]||s.role)+'：'+esc(s.user_name||'-')+'</span>';}).join('')||'<span class="chip">未签名</span>';
+    document.getElementById('p-detail').innerHTML='<div class="card" style="margin-top:14px"><h3>作业票详情 · '+esc(p.code)+'</h3>'
+      +'<div class="chips" style="margin-bottom:10px"><span class="chip">'+esc(L.permitType[p.work_type]||p.work_type)+'</span><span class="chip">'+esc(L.permitLevel[p.level]||p.level)+'</span><span class="chip">'+esc(p.applicant||'-')+'</span></div>'
+      +'<div class="grid" style="grid-template-columns:1fr 1fr">'
+      +'<div><h3 style="margin-bottom:6px">措施确认</h3>'+measures+'<div style="margin-top:8px"><button class="btn mini" onclick="genMeasures('+p.id+')">从模板生成</button> <button class="btn mini" onclick="addWorker('+p.id+')">添加作业人</button></div></div>'
+      +'<div><h3 style="margin-bottom:6px">气体检测</h3>'+gasHtml+'<div class="form-row" style="margin-top:8px"><div class="field"><label>O2 (%)</label><input id="g-o2" type="number" step="0.1"></div><div class="field"><label>LEL (%)</label><input id="g-lel" type="number" step="0.1"></div></div><button class="btn mini" onclick="addGas('+p.id+')">录入检测</button></div>'
+      +'</div>'
+      +'<div style="margin-top:10px"><h3 style="margin-bottom:6px">四方签名</h3><div class="chips">'+signs+'</div><div class="chips" style="margin-top:6px"><button class="btn mini" onclick="addSign('+p.id+',\'APPLICANT\')">申请人签</button> <button class="btn mini" onclick="addSign('+p.id+',\'APPROVER\')">审批人签</button> <button class="btn mini" onclick="addSign('+p.id+',\'GUARDIAN\')">监护人签</button> <button class="btn mini" onclick="addSign('+p.id+',\'RESPONSIBLE\')">负责人签</button></div></div>'
+      +'<div style="margin-top:12px"><button class="btn" onclick="startPermit('+p.id+')">开工校验并进入作业</button> <button class="btn mini" onclick="permitAdvance('+p.id+')">审批/推进</button></div>'
+      +'<div class="msg" id="pd-msg"></div></div>';
+  }catch(e){ document.getElementById('p-detail').innerHTML='<div class="empty">'+esc(e.message)+'</div>'; }
+}
+async function genMeasures(id){ try{ await api('POST','/api/permits/'+id+'/measures/generate'); showPermit(id); }catch(e){ alert(e.message); } }
+async function confirmMeasure(pid,mid){ try{ await api('PATCH','/api/permits/'+pid+'/measures/'+mid,{confirmed:1}); showPermit(pid); }catch(e){ alert(e.message); } }
+async function addWorker(pid){ var n=prompt('作业人姓名'); if(!n) return; try{ await api('POST','/api/table/permit_worker',{permit_id:pid,user_name:n.trim()}); showPermit(pid); }catch(e){ alert(e.message); } }
+async function addGas(pid){ var o2=document.getElementById('g-o2').value, lel=document.getElementById('g-lel').value; try{ var d=await api('POST','/api/permits/'+pid+'/gas',{o2:o2||null,lel:lel||null}); alert('检测结果：'+(d.result==='PASS'?'合格':'越界·已暂停')); showPermit(pid); loadPermits(); }catch(e){ alert(e.message); } }
+async function addSign(pid,role){ try{ await api('POST','/api/permits/'+pid+'/sign',{role:role}); showPermit(pid); }catch(e){ alert(e.message); } }
+async function startPermit(pid){ try{ await api('POST','/api/permits/'+pid+'/start'); showPermit(pid); loadPermits(); }catch(e){ var m=document.getElementById('pd-msg'); m.className='msg err'; m.textContent=esc(e.message); } }
+async function permitAdvance(pid){ try{ var list=await api('GET','/api/table/permits'); var x=list.find(function(o){return o.id===pid;}); var next=nextOf('permits', x.status); if(next){ await api('PATCH','/api/table/permits/'+pid,{status:next}); showPermit(pid); loadPermits(); } }catch(e){ var m=document.getElementById('pd-msg'); m.className='msg err'; m.textContent=esc(e.message); } }
+
+/* ===== H1 培训教育 ===== */
+function renderTraining(m,c){
+  c.innerHTML='<div class="page-head"><h1>'+esc(m.name)+'</h1><span class="prio p0">P0</span></div><p class="desc">'+esc(m.desc)+'</p>'
+    +'<div class="split"><div><div class="card"><h3>新增培训计划</h3><div class="form-row"><div class="field"><label>主题 *</label><input id="h1-title"></div><div class="field"><label>类型</label><select id="h1-type">'+Object.keys(L.trainType).map(function(k){return '<option value="'+k+'">'+L.trainType[k]+'</option>';}).join('')+'</select></div></div><div class="form-row"><div class="field"><label>讲师</label><input id="h1-trainer"></div><div class="field"><label>计划日期</label><input id="h1-date" type="date"></div></div><button class="btn" onclick="addTraining()">提交</button><div class="msg" id="h1-msg"></div></div>'
+    +'<div class="card"><h3>培训计划台账</h3><div class="table-wrap" id="h1-list"></div></div></div>'
+    +'<div class="card"><h3>课程库</h3><div class="table-wrap" id="h1-courses"></div><div class="form-row" style="margin-top:10px"><div class="field"><label>课程名称 *</label><input id="hc-title"></div><div class="field"><label>类型</label><select id="hc-type"><option>VIDEO</option><option>PPT</option><option>PDF</option><option>ARTICLE</option></select></div></div><button class="btn mini" onclick="addCourse()">新增课程</button><div class="msg" id="hc-msg"></div></div></div>';
+  loadTrainingList(); loadCourses();
+}
+async function addTraining(){ var t=document.getElementById('h1-title').value.trim(); if(!t){ document.getElementById('h1-msg').className='msg err'; document.getElementById('h1-msg').textContent='请填写主题'; return; } try{ await api('POST','/api/table/trainings',{title:t,train_type:document.getElementById('h1-type').value,trainer:document.getElementById('h1-trainer').value.trim(),plan_date:document.getElementById('h1-date').value||null}); document.getElementById('h1-title').value=''; loadTrainingList(); }catch(e){ document.getElementById('h1-msg').className='msg err'; document.getElementById('h1-msg').textContent=esc(e.message); } }
+async function loadTrainingList(){ try{ var list=await api('GET','/api/table/trainings'); setDb(true,'数据库已连接'); document.getElementById('h1-list').innerHTML=list.length?'<table><thead><tr><th>编码</th><th>主题</th><th>类型</th><th>讲师</th><th>日期</th><th>状态</th></tr></thead><tbody>'+list.map(function(x){return '<tr><td class="code">'+esc(x.code)+'</td><td>'+esc(x.title)+'</td><td>'+esc(L.trainType[x.train_type]||x.train_type)+'</td><td>'+esc(x.trainer||'-')+'</td><td>'+esc(x.plan_date||'-')+'</td><td>'+pill(L.trainStatus[x.status]||x.status,pillCls(x.status))+'</td></tr>';}).join('')+'</tbody></table>':'<div class="empty">暂无培训计划</div>'; }catch(e){ setDb(false,'数据库未连接'); } }
+async function loadCourses(){ try{ var list=await api('GET','/api/table/courses'); document.getElementById('h1-courses').innerHTML=list.length?'<table><thead><tr><th>编码</th><th>课程</th><th>类型</th><th>时长(分)</th><th>及格分</th></tr></thead><tbody>'+list.map(function(x){return '<tr><td class="code">'+esc(x.code)+'</td><td>'+esc(x.title)+'</td><td>'+esc(x.course_type||'-')+'</td><td>'+esc(x.duration_min||'-')+'</td><td>'+esc(x.pass_score||'-')+'</td></tr>';}).join('')+'</tbody></table>':'<div class="empty">暂无课程</div>'; }catch(e){ } }
+async function addCourse(){ var t=document.getElementById('hc-title').value.trim(); if(!t){ document.getElementById('hc-msg').className='msg err'; document.getElementById('hc-msg').textContent='请填写课程名称'; return; } try{ await api('POST','/api/table/courses',{title:t,course_type:document.getElementById('hc-type').value,duration_min:30,pass_score:60}); document.getElementById('hc-title').value=''; loadCourses(); }catch(e){ document.getElementById('hc-msg').className='msg err'; document.getElementById('hc-msg').textContent=esc(e.message); } }
+
+/* ===== H2 考试测评 ===== */
+var __quiz=[], __paperId=null, __answers={};
+function renderExam(m,c){
+  c.innerHTML='<div class="page-head"><h1>'+esc(m.name)+'</h1><span class="prio p0">P0</span></div><p class="desc">'+esc(m.desc)+'</p>'
+    +'<div class="split"><div class="card"><h3>考试列表</h3><div class="table-wrap" id="e-list"></div><h3 style="margin-top:12px">新增考试</h3><div class="form-row"><div class="field"><label>名称 *</label><input id="e-title"></div><div class="field"><label>及格分</label><input id="e-pass" type="number" value="60"></div></div><div class="form-row"><div class="field"><label>题量</label><input id="e-qn" type="number" value="5"></div><div class="field"><label>时长(分)</label><input id="e-dur" type="number" value="30"></div></div><button class="btn" onclick="addExam()">提交</button><div class="msg" id="e-msg"></div></div>'
+    +'<div class="card"><h3>题库</h3><div class="table-wrap" id="q-list"></div><h3 style="margin-top:12px">新增题目</h3><div class="form-row one"><div class="field"><label>题干 *</label><input id="q-stem"></div></div><div class="form-row"><div class="field"><label>选项(逗号分隔，可空)</label><input id="q-opts" placeholder="选项1,选项2,选项3,选项4"></div><div class="field"><label>正确答案</label><input id="q-ans" placeholder="A/B/C/D"></div></div><button class="btn" onclick="addQuestion()">提交</button><div class="msg" id="q-msg"></div></div></div>'
+    +'<div id="e-quiz"></div>';
+  loadExamList(); loadQuestionBank();
+}
+async function loadExamList(){ try{ var list=await api('GET','/api/table/exams'); setDb(true,'数据库已连接'); document.getElementById('e-list').innerHTML=list.length?'<table><thead><tr><th>编码</th><th>考试</th><th>题量</th><th>及格分</th><th>状态</th><th></th></tr></thead><tbody>'+list.map(function(x){return '<tr><td class="code">'+esc(x.code)+'</td><td>'+esc(x.title)+'</td><td>'+esc(x.question_count||'-')+'</td><td>'+esc(x.pass_score||'-')+'</td><td>'+pill(L.examStatus[x.status]||x.status,pillCls(x.status))+'</td><td><button class="btn mini" onclick="startExam('+x.id+')">开始考试</button></td></tr>';}).join('')+'</tbody></table>':'<div class="empty">暂无考试</div>'; }catch(e){ setDb(false,'数据库未连接'); } }
+async function loadQuestionBank(){ try{ var list=await api('GET','/api/table/questions'); document.getElementById('q-list').innerHTML=list.length?'<table><thead><tr><th>编码</th><th>题干</th><th>分类</th><th>答案</th></tr></thead><tbody>'+list.map(function(x){return '<tr><td class="code">'+esc(x.code)+'</td><td>'+esc(x.stem)+'</td><td>'+esc(x.category||'-')+'</td><td>'+esc(x.answer||'-')+'</td></tr>';}).join('')+'</tbody></table>':'<div class="empty">暂无题目</div>'; }catch(e){ } }
+async function addExam(){ var t=document.getElementById('e-title').value.trim(); if(!t){ document.getElementById('e-msg').className='msg err'; document.getElementById('e-msg').textContent='请填写名称'; return; } try{ await api('POST','/api/table/exams',{title:t,question_count:Number(document.getElementById('e-qn').value)||5,pass_score:Number(document.getElementById('e-pass').value)||60,duration_min:Number(document.getElementById('e-dur').value)||30}); document.getElementById('e-title').value=''; loadExamList(); }catch(e){ document.getElementById('e-msg').className='msg err'; document.getElementById('e-msg').textContent=esc(e.message); } }
+async function addQuestion(){ var s=document.getElementById('q-stem').value.trim(); var ans=(document.getElementById('q-ans').value||'').trim().toUpperCase(); if(!s){ document.getElementById('q-msg').className='msg err'; document.getElementById('q-msg').textContent='请填写题干'; return; } var optsRaw=document.getElementById('q-opts').value.trim(); var opts; if(optsRaw){ opts=JSON.stringify(optsRaw.split(',').map(function(x){return x.trim();})); } else { opts=JSON.stringify(['A','B','C','D']); } try{ await api('POST','/api/table/questions',{stem:s,options:opts,answer:ans||'A',category:'自定义',points:5}); document.getElementById('q-stem').value=''; loadQuestionBank(); }catch(e){ document.getElementById('q-msg').className='msg err'; document.getElementById('q-msg').textContent=esc(e.message); } }
+async function startExam(paperId){ try{ var d=await api('POST','/api/exam/start',{paper_id:paperId}); __quiz=d.questions; __paperId=paperId; __answers={};
+  var html=d.questions.map(function(q,i){ var opts=(q.options||[]).map(function(o,oi){ var ch=String.fromCharCode(65+oi); return '<label style="display:block;padding:5px 0;cursor:pointer"><input type="radio" name="q'+q.id+'" value="'+ch+'" onchange="__answers['+q.id+']=this.value"> '+ch+'. '+esc(o)+'</label>'; }).join(''); return '<div class="card" style="margin-bottom:10px"><div style="font-weight:600;margin-bottom:6px">'+(i+1)+'. '+esc(q.stem)+'</div>'+opts+'</div>'; }).join('');
+  document.getElementById('e-quiz').innerHTML='<div class="card"><h3>在线答题 · '+esc(d.paper.name)+'（及格 '+esc(d.paper.pass_score||60)+' 分）</h3>'+html+'<button class="btn" onclick="submitExam()">交卷</button><div id="e-score"></div></div>';
+}catch(e){ alert(e.message); } }
+async function submitExam(){ var ans=[]; Object.keys(__answers).forEach(function(id){ ans.push({id:Number(id),answer:__answers[id]}); }); try{ var d=await api('POST','/api/exam/submit',{paper_id:__paperId,answers:ans}); document.getElementById('e-score').innerHTML='<div style="margin-top:12px;font-size:15px">得分 <b>'+d.score+'</b> / '+d.total+'（'+d.pass_score+' 分及格）'+(d.passed?' <span class="pill ok">通过</span>':' <span class="pill danger">未通过</span>')+'</div>'; }catch(e){ alert(e.message); } }
+
+/* ===== 初始化 ===== */
+(async function init(){
+  try{ await ensureSeed(); setDb(true,'本地库已就绪'); renderSidebar(); openModule('A1'); loginAs('admin'); }
+  catch(e){ setDb(false,'初始化失败'); console.error(e); alert('初始化失败：'+(e&&e.message)); }
+})();
+</script>
+</body>
+</html>
