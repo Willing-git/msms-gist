@@ -72,3 +72,36 @@
 
 - `test_datastore.js` 新增 7 组用例（DELETE 权限/只读表、WEEKLY 周期推进、PATROL 防重复与旧数据兼容、admit 校验、W1 冲突拦截），**20/20 PASS**
 - 浏览器实测（Chrome）：D2 新增/编辑/删除、E2 待办执行闭环、H2 记录面板、W1 台账、runJobs 全部通过，截图见 `docs/`
+
+## 2026-08-19 UI 动效迭代（第二轮）
+
+> 动效方法论参考开源 Skill 体系（`dawitlabs/ui-skills` 的 animate 模块）与 Animate.css 经典关键帧，全部**自研内联实现**——保持项目"纯前端、零依赖、file:// 直开"约束，无任何外部库。
+
+### 动效清单（克制、服务业务）
+
+| 动效 | 触发 | 实现 |
+|---|---|---|
+| 模块切换飞入 | 打开任意模块，页面卡片/统计卡从下方上浮（stagger 45ms 递进，最多 360ms） | `ms-up` keyframes + MutationObserver 自动拾取 |
+| 表格行淡入 | 异步加载完成后前 12 行依次淡入 | `ms-in` keyframes |
+| KPI 数字滚动 | 驾驶舱/风险矩阵数字从 0 滚动到目标值（560ms ease-out） | rAF + easeOutCubic |
+| 侧边栏抽屉 | 移动端滑入滑出（0.26s cubic-bezier）+ 遮罩淡入淡出 | transition + opacity |
+| 按钮反馈 | hover 上浮 1px、按压缩放到 0.95 | transform transition |
+| 消息提示 | 表单成功/失败提示从左侧飞入 | `ms-right` keyframes |
+| 状态标签 | pill hover 微浮起 | transform |
+| 表格行 hover | 品牌色 5% 背景过渡 | transition |
+| 主题切换 | 明暗切换时全局 240ms 颜色平滑过渡 | `html.theme-switch` 过渡类 |
+
+### 本轮其他优化
+
+- **驾驶舱新增「最新消息」卡片**：P6 消息中心最近 5 条一屏呈现（标题/接收人/通道/状态/时间）
+- **证书提醒查重**：runJobs 对同持证人同类型提醒做去重，防止重复运行刷屏
+
+### 无障碍
+
+- 遵循 `prefers-reduced-motion`：用户系统开启"减少动效"时全部动画/过渡自动关闭
+- 动效时长 ≤560ms、无弹跳/弹性过载，缓动统一 `cubic-bezier(.2,0,0,1)`
+
+### 验证
+
+- 浏览器实测（Chrome 1280 桌面 + 375 移动端）：卡片 stagger 飞入、表格行淡入、KPI 滚动、主题过渡类添加/清除、抽屉滑出 + 遮罩淡入全部通过
+- 截图：`docs/msms-motion-dashboard.png`、`docs/msms-motion-d2.png`、`docs/msms-motion-drawer.png`

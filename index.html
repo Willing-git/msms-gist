@@ -917,11 +917,12 @@ async function dhImport(){
 
 /* ===== 动效引擎：模块切换飞入 + 卡片 stagger + KPI 数字滚动 ===== */
 function __spawnAnim(added){
-  var nodes=[];
+  var nodes=[], trs=[];
   function walk(el){
     if(el.nodeType!==1) return;
     var cn=el.className||'';
     if(/card|stat-card|mc|ov-card|page-head/.test(cn)) nodes.push(el);
+    if(el.tagName==='TR' && !el.classList.contains('anim-in')) trs.push(el);
     for(var i=0;i<el.children.length;i++) walk(el.children[i]);
   }
   for(var a=0;a<added.length;a++) walk(added[a]);
@@ -940,10 +941,9 @@ function __spawnAnim(added){
         if(p<1) requestAnimationFrame(tick);
       })();
     }
-    // 表格行前 10 行快速淡入
-    var rows=n.querySelectorAll&&n.querySelectorAll('tbody tr');
-    for(var r=0;r<rows.length&&r<10;r++) rows[r].classList.add('anim-in');
   });
+  // 异步填充的表格行快速淡入（仅前 12 行，避免大表抖动）
+  for(var r=0;r<trs.length&&r<12;r++) trs[r].classList.add('anim-in');
 }
 (function(){
   var content=document.getElementById('content');
