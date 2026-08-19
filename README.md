@@ -48,3 +48,27 @@
 - 仿制自千问办公托管版 `msms-cloud-workstation`（Node.js + Supabase）
 - 数据层由 `server.js` 的 Supabase REST 平移到前端 `datastore.js`（IndexedDB），业务规则（SCHEMA 校验、状态机、编号、风险计算、特殊业务流）完全保留
 - 详细反推分析见 `../MSMS反推分析与仿制方案.md`
+
+## 2026-08-19 迭代记录（审核 + 修复 + 增强）
+
+### 审核发现并修复的缺陷
+
+| # | 问题 | 严重度 | 修复 |
+|---|---|---|---|
+| 1 | 「运行定时任务」按钮必现栈溢出：`index.html` 与 `datastore.js` 同名全局函数 `runJobs` 互相覆盖，route→runJobs→api→route 无限递归 | P0 | UI 包装改名 `runJobsUI`（按钮 onclick 同步） |
+| 2 | 检查计划周期被忽略：`check_plan.plan_type` 存在但 `next_due_date` 一律 +1 天，周/月计划变每日 | P1 | 按 DAILY/WEEKLY/MONTHLY（大小写兼容）推进 |
+| 3 | W1 开工缺少「同区域冲突作业检测」（动火/盲板/动土/临时用电互斥，PRD W1-BR01②） | P1 | 补回 CONFLICT_PAIRS 校验 |
+| 4 | W2 承包商 admit 返回硬编码 `admitted:3` 假数据，缺评估分拦截 | P1 | 补 evaluation_score<3 拦截，返回真实结果（ok/activated） |
+| 5 | 防火巡查转隐患 `source` 用中文「巡查」，与字典（PATROL）及点检（INSPECTION）不一致 | P2 | 统一 `PATROL`，防重复查询兼容旧中文数据 |
+
+### 新增能力
+
+- **台账编辑/删除**：全部 CRUD 模块表格行新增「编辑」「删除」操作（编辑回填表单走 PATCH 全字段合并，不触发状态机；删除走新增 DELETE 路由，含 RBAC 校验与审计日志；作业票删除级联清理子表）
+- **E2 点检待办闭环**：点检页新增「点检待办」面板，展示 check_task 待办任务，可「执行完成」（PASS/FAIL），自动生成点检记录并闭环任务；FAIL 可在台账继续「转隐患」
+- **H2 考试记录**：考试页底部展示最近 5 条 exam_attempts 成绩
+- **运行结果明细**：「运行定时任务」弹窗展示全部 8 类任务摘要
+
+### 验证
+
+- `test_datastore.js` 新增 7 组用例（DELETE 权限/只读表、WEEKLY 周期推进、PATROL 防重复与旧数据兼容、admit 校验、W1 冲突拦截），**20/20 PASS**
+- 浏览器实测（Chrome）：D2 新增/编辑/删除、E2 待办执行闭环、H2 记录面板、W1 台账、runJobs 全部通过，截图见 `docs/`

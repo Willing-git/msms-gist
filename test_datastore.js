@@ -90,6 +90,71 @@ eval(code);
   var dash = await route('GET','/api/dashboard');
   ok('dashboard正常', dash.counts && dash.hazards.total===4, '隐患'+dash.hazards.total);
 
+  // 7. DELETE：权限校验（EMPLOYEE 无 DELETE）+ 正常删除 + readonly 拒绝
+  var delTarget = await route('POST','/api/table/equipment', {name:'待删除设备', category:'COMMON'});
+  var delId = delTarget.id;
+  __currentUser = DEMO_USERS.employee;
+  var denied = false;
+  try{ await route('DELETE','/api/table/equipment/'+delId); }catch(e){ denied = e.message.indexOf('PERMISSION_DENIED')>=0 || e.message.indexOf('权限不足')>=0; }
+  ok('DELETE-EMPLOYEE拒绝', denied);
+  __currentUser = DEMO_USERS.admin;
+  var stillThere = (await listAll('equipment')).some(function(x){return x.id===delId;});
+  ok('DELETE-权限拒绝后记录保留', stillThere);
+  var delRes = await route('DELETE','/api/table/equipment/'+delId);
+  var gone = !(await listAll('equipment')).some(function(x){return x.id===delId;});
+  ok('DELETE-admin成功且记录消失', delRes.deleted===true && gone);
+  var roDenied = false;
+  try{ await route('DELETE','/api/table/audit_logs/1'); }catch(e){ roDenied = true; }
+  ok('DELETE-readonly表拒绝', roDenied);
+
+  // 8. runJobs：WEEKLY 计划按 7 天推进 next_due_date
+  var todayStr = localDate();
+  var wk = await route('POST','/api/table/check_plan', {name:'周检计划-测试', plan_type:'WEEKLY', dept:'冲压车间', items:'光栅检查', responsible:'张伟', status:'ACTIVE', next_due_date:todayStr});
+  var beforeJobs = (await listAll('check_task')).length;
+  var s = await route('POST','/api/jobs/run');
+  var afterJobs = (await listAll('check_task')).length;
+  var wk2 = (await listAll('check_plan')).find(function(x){return x.id===wk.id;});
+  var expectNext = localDate(new Date(Date.now()+7*86400000));
+  ok('runJobs生成检查任务', afterJobs>beforeJobs && s.check_tasks_generated===afterJobs-beforeJobs, '生成'+s.check_tasks_generated+'（'+beforeJobs+'→'+afterJobs+'）');
+  ok('WEEKLY计划推进7天', wk2.next_due_date===expectNext, wk2.next_due_date+' 期望 '+expectNext);
+  // 清理测试计划
+  var dbTmp = await openDB();
+  await dbReq(dbTmp.transaction('check_plan','readwrite').objectStore('check_plan'), 'delete', [wk.id]);
+
+  // 9. fire-patrol 转隐患：source 统一 PATROL + 旧中文数据防重复
+  var fp = await route('POST','/api/table/fire_patrols', {area:'测试区域-1', patrol_type:'DAILY', patroller:'王海', patrol_date:todayStr, result:'ABNORMAL'});
+  var r1 = await route('POST','/api/fire-patrol/'+fp.id+'/to-hazard');
+  var r2 = await route('POST','/api/fire-patrol/'+fp.id+'/to-hazard');
+  ok('巡查转隐患生成+source=PATROL', !r1.existed && r1.hazard.source==='PATROL', 'source='+r1.hazard.source);
+  ok('巡查转隐患防重复', r2.existed===true);
+  // 模拟旧中文数据：直接改 source 再验证防重复仍生效
+  r1.hazard.source = '巡查';
+  await putRow('hazards', r1.hazard);
+  var r3 = await route('POST','/api/fire-patrol/'+fp.id+'/to-hazard');
+  ok('旧中文source兼容防重复', r3.existed===true);
+
+  // 10. W2 admit：评估分<3 拦截 / 正常通过
+  var cLow = await route('POST','/api/table/contractors', {name:'低分承包商-测试', evaluation_score:2, status:'ACTIVE'});
+  var lowDenied = false;
+  try{ await route('POST','/api/contractors/'+cLow.id+'/admit'); }catch(e){ lowDenied = e.message.indexOf('ADMIT_REJECTED')>=0 || e.message.indexOf('评估分')>=0; }
+  ok('admit-评估分<3拦截', lowDenied, lowDenied?'':'未拦截');
+  var cOk = await route('POST','/api/table/contractors', {name:'合格承包商-测试', evaluation_score:4, status:'INACTIVE'});
+  var aRes = await route('POST','/api/contractors/'+cOk.id+'/admit');
+  var cOk2 = (await listAll('contractors')).find(function(x){return x.id===cOk.id;});
+  ok('admit-正常通过并激活', aRes.ok===true && cOk2.status==='ACTIVE' && aRes.activated===true);
+
+  // 11. W1 开工：同区域冲突作业拦截（动火 vs 盲板抽堵）
+  var pA = await route('POST','/api/table/permits', {work_type:'HOTWORK', level:'MAJOR', applicant:'张伟', status:'L2_APPROVED', work_area:'A区-测试'});
+  var pB = await route('POST','/api/table/permits', {work_type:'BLIND_PLATE', level:'MAJOR', applicant:'李强', status:'L2_APPROVED', work_area:'A区-测试'});
+  var clashMsg = null;
+  try{ await route('POST','/api/permits/'+pB.id+'/start'); }catch(e){ clashMsg = e.message; }
+  ok('start-同区域冲突作业拦截', clashMsg && clashMsg.indexOf('同区域冲突作业')>=0, clashMsg||'未拦截');
+  // 无冲突区域仅走前置校验（缺签名等），错误信息不应含冲突
+  var pC = await route('POST','/api/table/permits', {work_type:'HOTWORK', level:'MAJOR', applicant:'张伟', status:'L2_APPROVED', work_area:'B区-测试'});
+  var clashMsg2 = null;
+  try{ await route('POST','/api/permits/'+pC.id+'/start'); }catch(e){ clashMsg2 = e.message; }
+  ok('start-无冲突区域走前置校验', clashMsg2 && clashMsg2.indexOf('同区域冲突')<0, clashMsg2||'未拦截');
+
   console.log(JSON.stringify(R, null, 2));
   var failCount = R.filter(function(x){ return x.indexOf('FAIL')===0; }).length;
   console.log('\n==== ' + (R.length-failCount) + '/' + R.length + ' PASS ====');

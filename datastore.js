@@ -253,7 +253,9 @@ async function runJobs(){
     if(p.status === 'ACTIVE' && p.next_due_date && p.next_due_date <= today){
       await putRow('check_task', { plan_id:p.id, due_date:today, executor:p.responsible, status:'PENDING', created_at:new Date().toISOString() });
       summary.check_tasks_generated++;
-      p.next_due_date = localDate(new Date(Date.now()+86400000));
+      // 按计划周期推进下次日期（PRD E2/F2：DAILY 每日、WEEKLY 每周、MONTHLY 每月；缺省按日）
+      var stepDays = String(p.plan_type||'').toUpperCase() === 'WEEKLY' ? 7 : (String(p.plan_type||'').toUpperCase() === 'MONTHLY' ? 30 : 1);
+      p.next_due_date = localDate(new Date(Date.now() + stepDays * 86400000));
       await putRow('check_plan', p);
     }
   }
@@ -437,11 +439,24 @@ async function route(method, path, body){
         return { ok:true };
       }
       if(sub === 'start' && method === 'POST'){
+        var permit4 = await getById('permits', pid);
+        if(!permit4) throw httpErr('NOT_FOUND');
         var allW = await listAll('permit_worker'); allW = allW.filter(function(w){return w.permit_id===pid;});
         var allM = await listAll('permit_measure'); allM = allM.filter(function(m){return m.permit_id===pid;});
         var allG = await listAll('gas_detection'); allG = allG.filter(function(g){return g.permit_id===pid;}).sort(function(a,b){return b.id-a.id;});
         var allS = await listAll('permit_signature'); allS = allS.filter(function(s){return s.permit_id===pid;});
         var missing = [];
+        // 同区域同时段冲突作业检测（W1-BR01②：动火/盲板抽堵/动土/临时用电互斥）
+        var CONFLICT_PAIRS = { HOTWORK:['BLIND_PLATE','EXCAVATION','TEMP_POWER'], BLIND_PLATE:['HOTWORK'], EXCAVATION:['HOTWORK'], TEMP_POWER:['HOTWORK'] };
+        var ACTIVE_ST = ['SUBMITTED','L1_APPROVED','L2_APPROVED','IN_PROGRESS'];
+        if(permit4.work_area){
+          var clashTypes = CONFLICT_PAIRS[permit4.work_type] || [];
+          if(clashTypes.length){
+            var allPermits = await listAll('permits');
+            var clash = allPermits.find(function(o){ return o.work_area===permit4.work_area && String(o.code)!==String(permit4.code) && ACTIVE_ST.indexOf(o.status)>=0 && clashTypes.indexOf(o.work_type)>=0; });
+            if(clash) missing.push('同区域冲突作业:'+(clash.code||clash.id)+'（'+clash.work_type+'）');
+          }
+        }
         var measuresOk = allM.length>0 && allM.every(function(m){return Number(m.confirmed)===1;});
         var needRoles = ['APPLICANT','APPROVER','GUARDIAN','RESPONSIBLE'];
         var signRoles = allS.map(function(s){return s.role;});
@@ -546,14 +561,15 @@ async function route(method, path, body){
     var fp = await getById('fire_patrols', fpid);
     if(!fp) throw httpErr('NOT_FOUND');
     var allHaz = await listAll('hazards');
-    var dupHaz = allHaz.filter(function(h){ return h.source==='巡查' && h.source_id===fp.code; });
+    // source 统一为 'PATROL'（兼容早期版本写入的中文 '巡查' 数据）
+    var dupHaz = allHaz.filter(function(h){ return (h.source==='PATROL'||h.source==='巡查') && h.source_id===fp.code; });
     if(dupHaz.length) return { hazard:dupHaz[0], existed:true };
     var hzCode = await codeGen('HD');
     var hzDeadline = localDate(new Date(Date.now()+3*86400000));
     var createdId = await putRow('hazards', {
       code:hzCode, title:('消防巡查异常：'+(fp.area||'')), category:'消防', level:'GENERAL',
       dept:'', location:fp.area||'', assignee:fp.patroller||'', status:'REPORTED',
-      rectify_deadline:hzDeadline, discover_channel:'巡查', source:'巡查', source_id:fp.code,
+      rectify_deadline:hzDeadline, discover_channel:'防火巡查', source:'PATROL', source_id:fp.code,
       created_at:new Date().toISOString()
     });
     var hzRow = await getById('hazards', createdId);
@@ -568,13 +584,18 @@ async function route(method, path, body){
     var ctid = Number(admitMatch[1]);
     var ct = await getById('contractors', ctid);
     if(!ct) throw httpErr('NOT_FOUND');
-    if(ct.is_blacklist === 1) throw httpErr('BLACKLISTED', {reason:'该单位已列入黑名单'});
     var tday = localDate();
-    if(ct.contract_end && ct.contract_end < tday) throw httpErr('CONTRACT_EXPIRED', {reason:'合同已到期'});
-    if(ct.insurance_end && ct.insurance_end < tday) throw httpErr('INSURANCE_EXPIRED', {reason:'保险已到期'});
-    if(!ct.status || ct.status !== 'ACTIVE'){ ct.status = 'ACTIVE'; await putRow('contractors', ct); }
-    await auditLog(__currentUser.name, 'ADMIT', 'contractors:'+ctid, 'passed');
-    return { admitted: 3, status:'ACTIVE' };
+    var reasons = [];
+    if(ct.is_blacklist === 1) reasons.push('黑名单单位，系统级拦截');
+    if(ct.contract_end && ct.contract_end < tday) reasons.push('合同已到期');
+    if(ct.insurance_end && ct.insurance_end < tday) reasons.push('保险已到期');
+    if(ct.evaluation_score !== undefined && ct.evaluation_score !== null && ct.evaluation_score !== '' && Number(ct.evaluation_score) < 3) reasons.push('评估分低于 3 分，暂停续用');
+    if(reasons.length) throw httpErr('ADMIT_REJECTED', {missing:reasons});
+    var changed = !ct.status || ct.status !== 'ACTIVE';
+    ct.status = 'ACTIVE';
+    await putRow('contractors', ct);
+    await auditLog(__currentUser.name, 'ADMIT', 'contractors:'+ctid, changed ? 'activated' : 'passed');
+    return { ok:true, status:'ACTIVE', activated:changed };
   }
 
   /* ---- W2 承包商：表现评估 ---- */
@@ -710,6 +731,26 @@ async function route(method, path, body){
       await putRow(t, merged);
       await auditLog(__currentUser.name, 'UPDATE', t+':'+seg[1], '');
       return merged;
+    }
+    if(method === 'DELETE' && seg.length === 2){
+      requireRole('DELETE');
+      if(SCHEMA[t].readonly) throw httpErr('READONLY');
+      var delRow = await getById(t, seg[1]);
+      if(!delRow) throw httpErr('NOT_FOUND');
+      var delDb = await openDB();
+      // 作业票删除时级联清理子表（措施/作业人/气体检测/签名）
+      if(t === 'permits'){
+        var subTables = ['permit_worker','permit_measure','gas_detection','permit_signature'];
+        for(var si=0;si<subTables.length;si++){
+          var subAll = await listAll(subTables[si]);
+          for(var sj=0;sj<subAll.length;sj++){
+            if(Number(subAll[sj].permit_id) === Number(seg[1])) await dbReq(delDb.transaction(subTables[si],'readwrite').objectStore(subTables[si]), 'delete', [subAll[sj].id]);
+          }
+        }
+      }
+      await dbReq(delDb.transaction(t,'readwrite').objectStore(t), 'delete', [Number(seg[1])]);
+      await auditLog(__currentUser.name, 'DELETE', t+':'+seg[1], delRow.code||'');
+      return { deleted:true };
     }
     throw httpErr('NOT_FOUND');
   }

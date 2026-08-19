@@ -190,7 +190,7 @@
         <option value="workshop">王海 · 车间管理员</option>
         <option value="employee">李强 · 员工</option>
       </select>
-      <button class="btn mini ghost" onclick="runJobs()" title="手动运行定时任务">运行定时任务</button>
+      <button class="btn mini ghost" onclick="runJobsUI()" title="手动运行定时任务">运行定时任务</button>
       <button class="btn mini ghost" onclick="backupToGist()" title="备份数据到 GitHub Gist">备份到云端</button>
       <button class="btn mini ghost" onclick="restoreFromGist()" title="从 GitHub Gist 恢复数据">从云端恢复</button>
       <span class="stat-note" id="roleBadge"></span>
@@ -233,8 +233,10 @@ async function loginAs(u){
   try{ var d=await api('POST','/api/auth/login',{username:u}); if(d&&d.token){__token=d.token;try{localStorage.setItem('msms-token',__token);}catch(e){}} document.getElementById('roleBadge').textContent='当前：'+d.user.name+' · '+d.user.role; }
   catch(e){ document.getElementById('roleBadge').textContent='登录失败'; }
 }
-async function runJobs(){
-  try{ var s=await api('POST','/api/jobs/run'); alert('已运行：生成检查任务 '+s.check_tasks_generated+'，隐患逾期 '+s.hazard_overdue+'，证书提醒 '+s.cert_reminders); }
+async function runJobsUI(){
+  try{ var s=await api('POST','/api/jobs/run');
+    alert('任务运行完成：\n· 检查任务生成 '+s.check_tasks_generated+'\n· 隐患逾期 '+s.hazard_overdue+'\n· 证书提醒 '+s.cert_reminders+'\n· 安全/消防设施临期·到期 '+(s.facility_expiring||0)+' / '+(s.facility_expired||0)+'\n· 特种设备临检·过期 '+(s.seq_due||0)+' / '+(s.seq_expired||0)+'\n· 应急物资临期·过期 '+(s.supply_expiring||0)+' / '+(s.supply_expired||0)+'\n· 排污超标告警 '+(s.emission_alerts||0));
+  }
   catch(e){ alert('运行失败：'+esc(e.message)); }
 }
 
@@ -490,10 +492,11 @@ function renderCrud(m,c){
       n++;
     });
     if(n%2===1) rows+='</div>';
-    form='<div class="card"><h3>新增'+esc(m.name)+'</h3>'+rows+'<button class="btn" onclick="submitCrud(\''+m.id+'\')">提交</button><div class="msg" id="msg-'+m.id+'"></div></div>';
+    form='<div class="card"><div style="display:flex;align-items:center;justify-content:space-between"><h3 id="formTitle-'+m.id+'" style="margin:0">新增'+esc(m.name)+'</h3><div id="editBar-'+m.id+'"></div></div>'+rows+'<button class="btn" id="btn-'+m.id+'" onclick="submitCrud(\''+m.id+'\')">提交</button><div class="msg" id="msg-'+m.id+'"></div></div>';
   }
-  c.innerHTML=head+stats+'<div class="split'+(m.type==='readonly'?' full':'')+'">'+form+'<div class="card"><h3>'+esc(m.name)+'台账</h3><div class="table-wrap" id="tbl-'+m.id+'"></div></div></div>';
+  c.innerHTML=head+stats+(m.id==='E2'?'<div class="card" style="margin-bottom:14px"><h3>点检待办 · 检查任务执行闭环</h3><div id="e2-tasks"><div class="empty">加载中…</div></div></div>':'')+'<div class="split'+(m.type==='readonly'?' full':'')+'">'+form+'<div class="card"><h3>'+esc(m.name)+'台账</h3><div class="table-wrap" id="tbl-'+m.id+'"></div></div></div>';
   loadList(m);
+  if(m.id==='E2') loadCheckTasks();
 }
 
 async function loadList(m){
@@ -530,6 +533,7 @@ function crudRow(m,r){
   if(m.id==='W2'){ extra=(extra?extra+' ':'')+'<button class="btn mini" onclick="admitContractor('+r.id+')">入厂校验</button> <button class="btn mini" onclick="evalContractor('+r.id+')">评估</button>'+(r.is_blacklist==1?'':' <button class="btn mini" onclick="blacklistContractor('+r.id+')">黑名单</button>'); }
   var act='';
   if(m.status){ act=(nextOf(m.table, r[m.status.key])?'<button class="btn mini" onclick="advanceTo(\''+m.id+'\','+r.id+')">推进</button>':'<span class="pill ok">已闭环</span>'); }
+  if(m.type!=='readonly'){ act=(act?act+' ':'')+'<button class="btn mini" onclick="editRow(\''+m.id+'\','+r.id+')">编辑</button> <button class="btn mini danger" onclick="delRow(\''+m.id+'\','+r.id+')">删除</button>'; }
   if(extra) act=act?(act+' '+extra):extra;
   return '<tr>'+tds+(act?'<td>'+act+'</td>':'')+'</tr>';
 }
@@ -547,8 +551,94 @@ async function submitCrud(id){
   var missing=m.form.filter(function(f){return f.req && (body[f.k]===undefined||body[f.k]==='');});
   var msg=document.getElementById('msg-'+id);
   if(missing.length){ msg.className='msg err'; msg.textContent='请填写：'+missing.map(function(f){return f.l;}).join('、'); return; }
-  try{ await api('POST','/api/table/'+m.table,body); msg.className='msg'; msg.textContent='已保存，台账已刷新'; m.form.forEach(function(f){var el=document.getElementById('f-'+id+'-'+f.k); if(el) el.value='';}); loadList(m); }
+  try{
+    if(__editId){ await api('PATCH','/api/table/'+m.table+'/'+__editId,body); msg.className='msg'; msg.textContent='已保存修改，台账已刷新'; }
+    else { await api('POST','/api/table/'+m.table,body); msg.className='msg'; msg.textContent='已保存，台账已刷新'; }
+    cancelEdit(id); loadList(m);
+  }
   catch(e){ msg.className='msg err'; msg.textContent=esc(e.message); }
+}
+/* 行内编辑 / 删除（PATCH 全字段合并更新 + DELETE 权限校验） */
+var __editId=null;
+async function editRow(id,rowId){
+  var m=byId[id];
+  try{
+    var list=await api('GET','/api/table/'+m.table);
+    var row=list.find(function(o){return o.id===rowId;});
+    if(!row) throw new Error('记录不存在');
+    m.form.forEach(function(f){
+      var el=document.getElementById('f-'+id+'-'+f.k); if(!el) return;
+      var v=row[f.k];
+      if(f.t==='datetime'&&v){ v=String(v).slice(0,16); }
+      if(v===undefined||v===null) v='';
+      if(el.tagName==='SELECT'){ el.value=[].some.call(el.options,function(o){return o.value===String(v);})?String(v):''; }
+      else el.value=String(v);
+    });
+    __editId=rowId;
+    document.getElementById('formTitle-'+id).textContent='编辑 '+m.name+' #'+rowId+(row.code?'（'+row.code+'）':'');
+    var btn=document.getElementById('btn-'+id); if(btn) btn.textContent='保存修改';
+    var bar=document.getElementById('editBar-'+id);
+    if(bar) bar.innerHTML='<button class="btn mini ghost" onclick="cancelEdit(\''+id+'\')">取消编辑</button>';
+  }catch(e){ alert(e.message); }
+}
+function cancelEdit(id){
+  var m=byId[id]; __editId=null;
+  var t=document.getElementById('formTitle-'+id); if(t) t.textContent='新增'+m.name;
+  var btn=document.getElementById('btn-'+id); if(btn) btn.textContent='提交';
+  var bar=document.getElementById('editBar-'+id); if(bar) bar.innerHTML='';
+  m.form.forEach(function(f){ var el=document.getElementById('f-'+id+'-'+f.k); if(el) el.value=''; });
+}
+async function delRow(id,rowId){
+  var m=byId[id];
+  if(!confirm('确认删除该条'+m.name+'记录？删除后不可恢复。')) return;
+  try{ await api('DELETE','/api/table/'+m.table+'/'+rowId); loadList(m); }
+  catch(e){ alert(e.message); }
+}
+/* E2 点检：检查计划待办任务执行闭环（check_plan→check_task→inspections） */
+async function loadCheckTasks(){
+  try{
+    var tasks=await api('GET','/api/table/check_task');
+    var plans=await api('GET','/api/table/check_plan');
+    var pending=tasks.filter(function(t){return t.status==='PENDING';}).sort(function(a,b){return a.due_date<b.due_date?-1:1;});
+    document.getElementById('e2-tasks').innerHTML=(pending.length?
+      '<table><thead><tr><th>计划</th><th>日期</th><th>执行人</th><th></th></tr></thead><tbody>'+pending.map(function(t){
+        var p=plans.find(function(x){return x.id===Number(t.plan_id);});
+        return '<tr><td>'+esc(p?p.name:'计划#'+t.plan_id)+'</td><td>'+esc(t.due_date)+'</td><td>'+esc(t.executor||'-')+'</td><td><button class="btn mini" onclick="completeCheckTask('+t.id+')">执行完成</button></td></tr>';
+      }).join('')+'</tbody></table>'
+      :'<div class="empty">暂无待办检查任务（在顶栏「运行定时任务」生成，或直接在下表新增点检记录）</div>');
+  }catch(e){ document.getElementById('e2-tasks').innerHTML='<div class="empty">'+esc(e.message)+'</div>'; }
+}
+async function completeCheckTask(id){
+  var res=prompt('点检结果：PASS（正常）/ FAIL（异常，可转隐患）','PASS');
+  if(res===null) return;
+  var result=String(res||'').trim().toUpperCase();
+  if(result!=='PASS'&&result!=='FAIL'){ alert('仅支持 PASS 或 FAIL'); return; }
+  try{
+    var tasks=await api('GET','/api/table/check_task');
+    var t=tasks.find(function(x){return x.id===id;});
+    if(!t) throw new Error('任务不存在');
+    var plans=await api('GET','/api/table/check_plan');
+    var p=plans.find(function(x){return x.id===Number(t.plan_id);});
+    var eq=(p?p.name:'计划#'+t.plan_id);
+    await api('POST','/api/table/inspections',{equipment:eq,plan_item:(p&&p.items)||'',inspector:t.executor||'',result:result,inspect_date:t.due_date||localDate()});
+    await api('PATCH','/api/table/check_task/'+id,{status:'COMPLETED',result:result});
+    loadCheckTasks(); loadList(byId['E2']);
+    if(result==='FAIL') alert('已生成异常点检记录，请在下方台账点击「转隐患」进入 D2 闭环');
+  }catch(e){ alert(e.message); }
+}
+/* H2 考试记录（exam_attempts 最近 5 条） */
+async function loadExamAttempts(){
+  try{
+    var list=await api('GET','/api/table/exam_attempts');
+    var exams=await api('GET','/api/table/exams');
+    list.sort(function(a,b){return String(b.created_at||'').localeCompare(String(a.created_at||''));});
+    var recent=list.slice(0,5);
+    document.getElementById('e-attempts').innerHTML=recent.length?
+      '<div class="card" style="margin-top:14px"><h3>最近考试记录</h3><table><thead><tr><th>考生</th><th>试卷</th><th>得分</th><th>结果</th><th>时间</th></tr></thead><tbody>'+recent.map(function(x){
+        var p=exams.find(function(e){return e.id===Number(x.paper_id);});
+        return '<tr><td>'+esc(x.user_name||'-')+'</td><td>'+esc(p?p.title:'试卷#'+x.paper_id)+'</td><td>'+esc(String(x.total_score))+'</td><td>'+(Number(x.is_passed)===1?'<span class="pill ok">通过</span>':'<span class="pill danger">未通过</span>')+'</td><td>'+esc(String(x.created_at||'').slice(0,16).replace('T',' '))+'</td></tr>';
+      }).join('')+'</tbody></table></div>':'';
+  }catch(e){}
 }
 /* 概览 P1 */
 function renderOverview(m,c){
@@ -641,7 +731,7 @@ async function advanceTo(id,rowId){
 async function inspToHazard(id){ try{ var d=await api('POST','/api/inspections/to-hazard',{inspection_id:id}); alert(d.existed?('该点检已转过隐患：'+d.hazard.code):('已生成隐患：'+d.hazard.code)); }catch(e){ alert(e.message); } }
 async function patrolToHazard(id){ try{ var d=await api('POST','/api/fire-patrol/'+id+'/to-hazard'); alert(d.existed?('该巡查已转过隐患：'+d.hazard.code):('已生成消防隐患：'+d.hazard.code+'（3 天整改期限）')); loadList(byId['F2']); }catch(e){ alert(e.message); } }
 async function closeIncident(id){ try{ var d=await api('POST','/api/incidents/'+id+'/close'); alert('已结案（四不放过校验通过），自动生成风险复评工单：'+d.ticket); loadList(byId['I1']); }catch(e){ alert('结案被拦：'+e.message); } }
-async function admitContractor(id){ try{ var d=await api('POST','/api/contractors/'+id+'/admit'); alert('校验通过，'+d.admitted+' 名人员已获入厂许可'); loadList(byId['W2']); }catch(e){ alert('入厂被拦：'+e.message); } }
+async function admitContractor(id){ try{ var d=await api('POST','/api/contractors/'+id+'/admit'); alert(d.activated?'校验通过，单位已激活入厂资格':'校验通过，单位可正常入厂作业'); loadList(byId['W2']); }catch(e){ alert('入厂被拦：'+e.message); } }
 async function evalContractor(id){ try{ var d=await api('POST','/api/contractors/'+id+'/evaluate'); alert('评估完成，得分：'+d.score+'（公式 5-违章×0.5-事故×2，0~5 封顶）'); loadList(byId['W2']); }catch(e){ alert(e.message); } }
 async function blacklistContractor(id){ var reason=prompt('加入黑名单原因：'); if(reason===null) return; try{ await api('POST','/api/contractors/'+id+'/blacklist',{reason:reason}); alert('已加入黑名单，其人员不可再绑定作业票'); loadList(byId['W2']); }catch(e){ alert(e.message); } }
 
@@ -712,8 +802,8 @@ function renderExam(m,c){
   c.innerHTML='<div class="page-head"><h1>'+esc(m.name)+'</h1><span class="prio p0">P0</span></div><p class="desc">'+esc(m.desc)+'</p>'
     +'<div class="split"><div class="card"><h3>考试列表</h3><div class="table-wrap" id="e-list"></div><h3 style="margin-top:12px">新增考试</h3><div class="form-row"><div class="field"><label>名称 *</label><input id="e-title"></div><div class="field"><label>及格分</label><input id="e-pass" type="number" value="60"></div></div><div class="form-row"><div class="field"><label>题量</label><input id="e-qn" type="number" value="5"></div><div class="field"><label>时长(分)</label><input id="e-dur" type="number" value="30"></div></div><button class="btn" onclick="addExam()">提交</button><div class="msg" id="e-msg"></div></div>'
     +'<div class="card"><h3>题库</h3><div class="table-wrap" id="q-list"></div><h3 style="margin-top:12px">新增题目</h3><div class="form-row one"><div class="field"><label>题干 *</label><input id="q-stem"></div></div><div class="form-row"><div class="field"><label>选项(逗号分隔，可空)</label><input id="q-opts" placeholder="选项1,选项2,选项3,选项4"></div><div class="field"><label>正确答案</label><input id="q-ans" placeholder="A/B/C/D"></div></div><button class="btn" onclick="addQuestion()">提交</button><div class="msg" id="q-msg"></div></div></div>'
-    +'<div id="e-quiz"></div>';
-  loadExamList(); loadQuestionBank();
+    +'<div id="e-quiz"></div><div id="e-attempts"></div>';
+  loadExamList(); loadQuestionBank(); loadExamAttempts();
 }
 async function loadExamList(){ try{ var list=await api('GET','/api/table/exams'); setDb(true,'数据库已连接'); document.getElementById('e-list').innerHTML=list.length?'<table><thead><tr><th>编码</th><th>考试</th><th>题量</th><th>及格分</th><th>状态</th><th></th></tr></thead><tbody>'+list.map(function(x){return '<tr><td class="code">'+esc(x.code)+'</td><td>'+esc(x.title)+'</td><td>'+esc(x.question_count||'-')+'</td><td>'+esc(x.pass_score||'-')+'</td><td>'+pill(L.examStatus[x.status]||x.status,pillCls(x.status))+'</td><td><button class="btn mini" onclick="startExam('+x.id+')">开始考试</button></td></tr>';}).join('')+'</tbody></table>':'<div class="empty">暂无考试</div>'; }catch(e){ setDb(false,'数据库未连接'); } }
 async function loadQuestionBank(){ try{ var list=await api('GET','/api/table/questions'); document.getElementById('q-list').innerHTML=list.length?'<table><thead><tr><th>编码</th><th>题干</th><th>分类</th><th>答案</th></tr></thead><tbody>'+list.map(function(x){return '<tr><td class="code">'+esc(x.code)+'</td><td>'+esc(x.stem)+'</td><td>'+esc(x.category||'-')+'</td><td>'+esc(x.answer||'-')+'</td></tr>';}).join('')+'</tbody></table>':'<div class="empty">暂无题目</div>'; }catch(e){ } }
