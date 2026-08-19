@@ -170,6 +170,43 @@
     .theme-btn { width:30px; height:30px; }
     .btn.mini.ghost { display:none; } /* 小屏隐藏次要按钮，功能保留在模块内 */
   }
+
+  /* ===== 动效系统（轻量自研：进入/反馈/导航，遵循 reduced-motion） ===== */
+  @keyframes ms-up { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
+  @keyframes ms-in { from { opacity:0; } to { opacity:1; } }
+  @keyframes ms-right { from { opacity:0; transform:translateX(-16px); } to { opacity:1; transform:none; } }
+  @keyframes ms-zoom { from { opacity:0; transform:scale(.92); } to { opacity:1; transform:scale(1); } }
+  @keyframes ms-down { from { opacity:0; transform:translateY(-12px); } to { opacity:1; transform:none; } }
+  .anim-up { animation:ms-up .34s cubic-bezier(.2,0,0,1) both; }
+  .anim-in { animation:ms-in .28s cubic-bezier(.2,0,0,1) both; }
+  .anim-right { animation:ms-right .3s cubic-bezier(.2,0,0,1) both; }
+  .anim-zoom { animation:ms-zoom .24s cubic-bezier(.2,0,0,1) both; }
+  .anim-down { animation:ms-down .3s cubic-bezier(.2,0,0,1) both; }
+  /* 按钮与交互反馈 */
+  .btn { transition:background .18s var(--ease), transform .12s var(--ease), box-shadow .18s var(--ease); }
+  .btn:hover { transform:translateY(-1px); }
+  .btn:active { transform:scale(.95); }
+  .btn.mini { transition:background .18s var(--ease), transform .12s var(--ease), opacity .18s var(--ease); }
+  .btn.mini:hover { transform:translateY(-1px); }
+  .btn.mini:active { transform:scale(.94); }
+  /* 导航抽屉缓动 + 遮罩淡入 */
+  .sidebar { transition:transform .26s cubic-bezier(.2,0,0,1); }
+  .backdrop { transition:opacity .22s var(--ease); }
+  .backdrop { opacity:0; }
+  body.nav-open .backdrop { opacity:1; }
+  /* 消息提示飞入 + 状态标签弹出 */
+  .msg { animation:ms-right .28s cubic-bezier(.2,0,0,1) both; }
+  .pill { transition:transform .15s var(--ease); }
+  .pill:hover { transform:translateY(-1px); }
+  /* 表格行悬浮反馈 */
+  #content tbody tr { transition:background .15s var(--ease); }
+  #content tbody tr:hover { background:color-mix(in srgb,var(--brand-500) 5%,transparent); }
+  /* 主题切换平滑过渡 */
+  html.theme-switch, html.theme-switch * { transition:background-color .24s var(--ease), color .24s var(--ease), border-color .24s var(--ease) !important; }
+  /* 无障碍：用户偏好减少动效时全部关闭 */
+  @media (prefers-reduced-motion: reduce){
+    *, *::before, *::after { animation:none !important; transition:none !important; }
+  }
 </style>
 </head>
 <body>
@@ -250,7 +287,7 @@ var L={
   permitLevel:{GENERAL:'一般',MAJOR:'较大',CRITICAL:'严重'},
   permitStatus:{DRAFT:'草稿',SUBMITTED:'已提交',L1_APPROVED:'一级已审',L2_APPROVED:'二级已审',IN_PROGRESS:'作业中',FINISHED:'已完工',ARCHIVED:'已归档'},
   ticketStatus:{OPEN:'待处理',DOING:'处理中',PENDING_VERIFY:'待验收',CLOSED:'已关闭',REJECTED:'已驳回'},
-  ticketType:{hazard_rectify:'隐患整改',equip_maintain:'设备维保',risk_review:'风险复评',permit_approve:'作业审批',training:'培训补考',capa:'纠正措施'},
+  ticketType:{hazard_rectify:'隐患整改',equip_maintain:'设备维保',risk_review:'风险复评',permit_approve:'作业审批',training:'培训补考',capa:'纠正措施',drill_action:'演练行动项'},
   unitType:{COMPANY:'公司',DEPT:'部门',WORKSHOP:'车间',TEAM:'班组',POST:'岗位'},
   orgStatus:{ACTIVE:'启用',INACTIVE:'停用'},
   userStatus:{ACTIVE:'在职',FROZEN:'冻结',LOCKED:'锁定',LEFT:'离职'},
@@ -674,6 +711,14 @@ async function renderDashboard(c){
       '<div class="stats">'+kpi.map(function(k){return '<div class="stat-card"><div class="k">'+k[0]+'</div><div class="v">'+k[1]+'</div></div>';}).join('')+'</div>'
       +'<div class="matrix" style="margin-bottom:16px">'+risk.map(function(r){return '<div class="mc" style="background:'+r.c+'"><div class="n">'+r.label+'风险</div><div class="v">'+r.n+'</div></div>';}).join('')+'</div>'
       +'<div class="ov-card"><h3>64 模块覆盖度</h3><div class="chips"><span class="chip">P0 一期必做：'+MODULES.filter(function(m){return m.prio==='P0';}).length+'</span><span class="chip">P1 二期：'+MODULES.filter(function(m){return m.prio==='P1';}).length+'</span><span class="chip">P2 按需：'+MODULES.filter(function(m){return m.prio==='P2';}).length+'</span><span class="chip">总计：'+MODULES.length+'</span></div></div>';
+    // 最新消息聚合（P6 消息中心在驾驶舱的一屏呈现）
+    try{
+      var msgs=await api('GET','/api/table/messages');
+      var recent=(msgs||[]).slice().sort(function(a,b){return String(b.created_at||'').localeCompare(String(a.created_at||''));}).slice(0,5);
+      document.getElementById('dash-body').insertAdjacentHTML('beforeend',
+        '<div class="ov-card" style="margin-top:16px"><h3>最新消息</h3>'+
+        (recent.length?'<table><thead><tr><th>标题</th><th>接收人</th><th>通道</th><th>状态</th><th>时间</th></tr></thead><tbody>'+recent.map(function(x){return '<tr><td>'+esc(x.title)+'</td><td>'+esc(x.to_user||'-')+'</td><td>'+pill(L.channel[x.channel]||x.channel||'-','gray')+'</td><td>'+pill(L.msgStatus[x.status]||x.status||'-',x.status==='FAILED'?'danger':x.status==='READ'?'ok':'gray')+'</td><td>'+esc(String(x.created_at||'').slice(0,16).replace('T',' '))+'</td></tr>';}).join('')+'</tbody></table>':'<div class="empty">暂无消息</div>')+'</div>');
+    }catch(e){ /* 消息聚合失败不影响驾驶舱主体 */ }
   }catch(e){ setDb(false,'数据库未连接'); document.getElementById('dash-body').innerHTML='<div class="empty">'+esc(e.message)+'</div>'; }
 }
 
@@ -869,6 +914,58 @@ async function dhImport(){
     msg.className='msg'; msg.textContent='导入完成';
   }catch(e){ msg.className='msg err'; msg.textContent=esc(e.message); }
 }
+
+/* ===== 动效引擎：模块切换飞入 + 卡片 stagger + KPI 数字滚动 ===== */
+function __spawnAnim(added){
+  var nodes=[];
+  function walk(el){
+    if(el.nodeType!==1) return;
+    var cn=el.className||'';
+    if(/card|stat-card|mc|ov-card|page-head/.test(cn)) nodes.push(el);
+    for(var i=0;i<el.children.length;i++) walk(el.children[i]);
+  }
+  for(var a=0;a<added.length;a++) walk(added[a]);
+  nodes=nodes.filter(function(n){ return !/anim-(up|in|right|zoom)/.test(n.className); });
+  nodes.forEach(function(n,i){
+    var d=Math.min(i*45,360);
+    n.style.animationDelay=d+'ms';
+    n.classList.add('anim-up');
+    // KPI 数字滚动（纯数字才滚动）
+    var v=n.querySelector&&n.querySelector('.v');
+    if(v && /^[0-9]+(\.[0-9]+)?$/.test(String(v.textContent).trim())){
+      var target=parseFloat(v.textContent); var t0=Date.now(), dur=560;
+      (function tick(){
+        var p=Math.min(1,(Date.now()-t0)/dur), e=1-Math.pow(1-p,3);
+        v.textContent=Math.round(target*e);
+        if(p<1) requestAnimationFrame(tick);
+      })();
+    }
+    // 表格行前 10 行快速淡入
+    var rows=n.querySelectorAll&&n.querySelectorAll('tbody tr');
+    for(var r=0;r<rows.length&&r<10;r++) rows[r].classList.add('anim-in');
+  });
+}
+(function(){
+  var content=document.getElementById('content');
+  if(content && 'MutationObserver' in window){
+    new MutationObserver(function(muts){
+      var added=[];
+      for(var m=0;m<muts.length;m++){
+        for(var k=0;k<muts[m].addedNodes.length;k++){
+          if(muts[m].addedNodes[k].nodeType===1) added.push(muts[m].addedNodes[k]);
+        }
+      }
+      if(added.length) __spawnAnim(added);
+    }).observe(content,{childList:true,subtree:true});
+  }
+  // 主题切换平滑过渡
+  var tb=document.getElementById('themeBtn');
+  if(tb) tb.addEventListener('click',function(){
+    var html=document.documentElement;
+    html.classList.add('theme-switch');
+    setTimeout(function(){ html.classList.remove('theme-switch'); },260);
+  });
+})();
 
 /* ===== 初始化 ===== */
 (async function init(){

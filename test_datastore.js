@@ -155,6 +155,19 @@ eval(code);
   try{ await route('POST','/api/permits/'+pC.id+'/start'); }catch(e){ clashMsg2 = e.message; }
   ok('start-无冲突区域走前置校验', clashMsg2 && clashMsg2.indexOf('同区域冲突')<0, clashMsg2||'未拦截');
 
+  // 12. R2 演练问题转行动项（R2-BR01）
+  var tkBefore = (await listAll('tickets')).length;
+  var edBad = await route('POST','/api/table/emergency_drills', {name:'测试演练-有问题', organizer:'张伟', evaluation:'响应速度待提升', status:'PLANNED'});
+  await route('PATCH','/api/table/emergency_drills/'+edBad.id, {status:'COMPLETED'});
+  var tkAfterBad = (await listAll('tickets')).length;
+  var newTicket = tkAfterBad > tkBefore ? (await listAll('tickets')).slice(-1)[0] : null;
+  ok('R2演练问题转行动项', tkAfterBad>tkBefore && newTicket && newTicket.biz_type==='drill_action' && newTicket.owner==='张伟', newTicket?('biz='+newTicket.biz_type+',owner='+newTicket.owner):'未生成');
+  var tkBefore2 = (await listAll('tickets')).length;
+  var edGood = await route('POST','/api/table/emergency_drills', {name:'测试演练-无问题', organizer:'陈刚', evaluation:'演练流程顺畅，达到预期', status:'PLANNED'});
+  await route('PATCH','/api/table/emergency_drills/'+edGood.id, {status:'COMPLETED'});
+  var tkAfterGood = (await listAll('tickets')).length;
+  ok('R2无问题演练不生成行动项', tkAfterGood === tkBefore2, (tkAfterGood-tkBefore2)+' 新增');
+
   console.log(JSON.stringify(R, null, 2));
   var failCount = R.filter(function(x){ return x.indexOf('FAIL')===0; }).length;
   console.log('\n==== ' + (R.length-failCount) + '/' + R.length + ' PASS ====');

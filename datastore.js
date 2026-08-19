@@ -269,11 +269,15 @@ async function runJobs(){
   }
   var certs = await listAll('certificates');
   var daysMap = [30,15,7,1];
+  var sentMsgs = await listAll('messages');
   for(var k=0;k<certs.length;k++){
     var c = certs[k];
     if(!c.expire_date) continue;
     var diff = Math.ceil((new Date(c.expire_date) - new Date())/86400000);
     if(daysMap.indexOf(diff) >= 0){
+      // 查重：同持证人同提醒类型已发送则跳过（防止重复运行刷屏）
+      var dup = sentMsgs.some(function(m){ return m.title==='证书到期提醒' && m.to_user===c.holder; });
+      if(dup) continue;
       await notifySend({ title:'证书到期提醒', content:'证书将于 '+diff+' 天后到期，请及时复审', to_user:c.holder });
       summary.cert_reminders++;
     }
@@ -719,6 +723,17 @@ async function route(method, path, body){
         }
         var updated = await transition(t, seg[1], row2.status);
         await auditLog(__currentUser.name, 'TRANSITION', t+':'+seg[1], row2.status);
+        // R2-BR01：演练完成且评估含问题 → 自动生成行动项（P8 ticket，责任人=演练负责人，期限 +7 天）
+        if(t === 'emergency_drills' && row2.status === 'COMPLETED'){
+          var ed = await getById(t, seg[1]);
+          var prob = ed && /问题|待提升|需改进|不足|不合格|异常|不到位|缺陷/.test(ed.evaluation || '');
+          if(prob){
+            var tk3 = await codeGen('TK');
+            var dl3 = localDate(new Date(Date.now()+7*86400000));
+            await putRow('tickets', { code:tk3, biz_type:'drill_action', title:'演练行动项：'+(ed.name||''), owner:ed.organizer||'', status:'OPEN', deadline:dl3, source_type:'emergency_drill', source_id:ed.id, created_at:new Date().toISOString() });
+            await notifySend({ title:'演练问题已转行动项', content:'演练 '+(ed.name||'')+' 评估发现问题，已自动生成行动项工单', to_user:ed.organizer||'' });
+          }
+        }
         return updated;
       }
       if(t === 'risk_units' && (row2.l!=null || row2.e!=null || row2.c!=null)){
